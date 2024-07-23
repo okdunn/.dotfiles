@@ -1,0 +1,8 @@
+import = [
+"~/.config/alacritty/catppuccin-macchiato.toml"
+]
+
+shell = "/bin/zsh"
+
+[window]
+opacity = 0.8
