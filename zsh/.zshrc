@@ -34,6 +34,7 @@ alias l="eza"
 alias ll="eza -alh"
 alias tree="eza --tree"
 alias vi="nvim"
+alias lg="lazygit"
 
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
