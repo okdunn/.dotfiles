@@ -15,17 +15,11 @@ tmux_running=$(pgrep tmux)
 
 if [[ -z $TMUX ]] && [[ -z $tmux_running ]]; then
     tmux new-session -s $selected_name -c $selected
-    tmux send-keys -t "$selected_name" "echo 'This is window 1'" C-m
-    tmux new-window -n "Window 2" -t "$selected_name"
-    tmux send-keys -t "$selected_name:1" "echo 'This is window 2'" C-m
     exit 0
 fi
 
 if ! tmux has-session -t=$selected_name 2> /dev/null; then
     tmux new-session -ds $selected_name -c $selected
-    tmux send-keys -t "$selected_name" "echo 'This is window 1'" C-m
-    tmux new-window -n "Window 2" -t "$selected_name"
-    tmux send-keys -t "$selected_name:1" "echo 'This is window 2'" C-m
 fi
 
 tmux switch-client -t $selected_name
