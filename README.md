@@ -1,21 +1,8 @@
 # dotfiles
 
-These are my configs!
+these are my configs!
 
-## Dependencies
+### To-Do
+super WIP atm
 
-```
-sudo apt-get install git
-```
-
-```
-sudo apt-get install stow
-```
-
-## Setup
-```
-git clone https://github.com/origamijoji/dotfiles.git .dotfiles
-```
-```
-stow .
-```
+make install.sh, download zsh plugins, oh-my-zsh, p10k, switch to wezterm, reconfig nvim, etc
