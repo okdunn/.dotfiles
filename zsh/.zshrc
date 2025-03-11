@@ -22,6 +22,8 @@ plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
 
 source $ZSH/oh-my-zsh.sh
 
+bindkey -v
+
 # Set personal aliases, overriding those provided by Oh My Zsh libs,
 # plugins, and themes. Aliases can be placed here, though Oh My Zsh
 # users are encouraged to define aliases within a top-level file in
@@ -49,3 +51,4 @@ export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 
 eval "$(zoxide init zsh)"
 
+. "$HOME/.deno/env"
