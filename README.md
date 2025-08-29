@@ -1,8 +1,9 @@
-# dotfiles
-
-these are my configs!
-
-### To-Do
-super WIP atm
-
-make install.sh, download zsh plugins, oh-my-zsh, p10k, switch to wezterm, reconfig nvim, etc
+# Installation
+```
+[ -d ~/.dotfiles ] || git clone https://github.com/origamijoji/dotfiles.git ~/.dotfiles && cd ~/.dotfiles && bash install.sh
+```
+<img
+        src="https://github.com/origamijoji/dotfiles/raw/main/etc/chisato_pointing.png" 
+        width=40%
+        alt="Chisato pointing"
+    />
