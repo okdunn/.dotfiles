@@ -12,7 +12,7 @@ sudo apt install -y \
   build-essential curl git wget unzip stow \
   zsh fzf ripgrep fd-find \
   python3-venv python3-pip \
-  neovim
+  ninja-build gettext cmake
 
 if [ ! -d "$HOME/.pyenv" ]; then
   log "Installing pyenv..."
@@ -95,6 +95,16 @@ if ! command -v gh &>/dev/null; then
 	&& echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
 	&& sudo apt update \
 	&& sudo apt install gh -y
+fi
+
+if ! command -v nvim &>/dev/null; then
+  log "Building Neovim..."
+  git clone https://github.com/neovim/neovim.git ~/.nvim-src
+  cd ~/.nvim-src
+  git checkout release-0.11
+  make CMAKE_BUILD_TYPE=RelWithDebInfo
+  sudo make install
+  cd -
 fi
 
 if [ "$SHELL" != "$(command -v zsh)" ]; then
