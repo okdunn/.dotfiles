@@ -9,5 +9,6 @@ wezterm.on("gui-startup", function(window)
 end)
 
 config.color_scheme = "Catppuccin Macchiato"
+config.hide_tab_bar_if_only_one_tab = true
 
 return config
