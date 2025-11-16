@@ -7,7 +7,7 @@ fi
 
 export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
 PATH="$PATH":"$HOME/.local/scripts/"
-bindkey -s ^f "tmux-sessionizer\n"
+bindkey -s ^f "zp\n"
 
 export ZSH=$HOME/.oh-my-zsh
 
@@ -35,7 +35,7 @@ alias ls="eza"
 alias l="eza"
 alias ll="eza -alh"
 alias tree="eza --tree"
-alias vi="nvim"
+alias vim="nvim"
 alias lg="lazygit"
 
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
