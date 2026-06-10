@@ -1,3 +1,5 @@
+tap "homebrew/cask-fonts"
+
 brew "neovim"
 brew "fzf"
 brew "ripgrep"
@@ -11,3 +13,5 @@ brew "gh"
 brew "zellij"
 brew "mise"
 brew "atuin"
+
+cask "font-jetbrains-mono-nerd-font"
