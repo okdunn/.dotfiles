@@ -104,6 +104,9 @@ fi
 
 stow_packages "zsh-debian"
 
+log "Installing Neovim plugins..."
+nvim --headless "+Lazy! sync" +qa 2>/dev/null || true
+
 if [[ "$SHELL" != "$(command -v zsh)" ]]; then
   log "Changing shell to zsh..."
   chsh -s "$(command -v zsh)"

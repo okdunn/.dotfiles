@@ -2,6 +2,9 @@ return {
   "folke/snacks.nvim",
   ---@type snacks.Config
   opts = {
+    lazygit = {
+      configure = false,
+    },
     dashboard = {
       width = 50,
       sections = {
