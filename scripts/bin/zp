@@ -33,8 +33,7 @@ if [[ -n "$SESSION_STATUS" ]] && ! echo "$SESSION_STATUS" | grep -q "EXITED"; th
   zellij attach "$SESSION_NAME"
   exit $?
 elif [[ -n "$SESSION_STATUS" ]]; then
-  zellij attach "$SESSION_NAME" --create --force-run-commands
-  exit $?
+  zellij delete-session "$SESSION_NAME" --force 2>/dev/null
 fi
 
 LAYOUT=$(mktemp /tmp/zellij-layout-XXXXXX.kdl)
