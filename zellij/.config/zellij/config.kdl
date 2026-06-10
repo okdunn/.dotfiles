@@ -1,4 +1,5 @@
 theme "oxocarbon"
+session_serialization true
 
 themes {
     oxocarbon {

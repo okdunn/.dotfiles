@@ -24,10 +24,10 @@ SESSION_STATUS=$(NO_COLOR=1 zellij list-sessions 2>/dev/null | grep "^$SESSION_N
 if [[ -n "$SESSION_STATUS" ]] && ! echo "$SESSION_STATUS" | grep -q "EXITED"; then
   zellij attach "$SESSION_NAME"
   exit $?
+elif [[ -n "$SESSION_STATUS" ]]; then
+  zellij attach "$SESSION_NAME" --create --force-run-commands
+  exit $?
 fi
-
-# Remove any dead/exited session with this name before creating fresh
-zellij delete-session "$SESSION_NAME" 2>/dev/null || true
 
 LAYOUT=$(mktemp /tmp/zellij-layout-XXXXXX.kdl)
 cat > "$LAYOUT" <<EOF
