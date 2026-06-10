@@ -3,7 +3,7 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
-export PATH="$HOME/bin:$HOME/.local/bin:$HOME/.local/scripts:/usr/local/bin:$PATH"
+export PATH="$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 
 # Antidote — rebuild bundle only when .zsh_plugins.txt changes
 source "${ZDOTDIR:-$HOME}/.antidote/antidote.zsh"
