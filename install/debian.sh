@@ -43,6 +43,19 @@ if [[ "$STOW_ONLY" != "true" ]]; then
     sudo apt install -y eza
   fi
 
+  if ! fc-list | grep -qi "JetBrainsMono Nerd Font"; then
+    log "Installing JetBrains Mono Nerd Font..."
+    FONT_VERSION=$(curl -s "https://api.github.com/repos/ryanoasis/nerd-fonts/releases/latest" \
+      | grep -Po '"tag_name": *"\K[^"]*')
+    [[ -n "$FONT_VERSION" ]] || { log "Failed to fetch nerd-fonts version"; exit 1; }
+    curl -Lo "$HOME/JetBrainsMono.tar.xz" \
+      "https://github.com/ryanoasis/nerd-fonts/releases/download/${FONT_VERSION}/JetBrainsMono.tar.xz"
+    mkdir -p "$HOME/.local/share/fonts/JetBrainsMonoNerdFont"
+    tar xf "$HOME/JetBrainsMono.tar.xz" -C "$HOME/.local/share/fonts/JetBrainsMonoNerdFont"
+    fc-cache -f
+    rm -f "$HOME/JetBrainsMono.tar.xz"
+  fi
+
   if ! require_cmd zoxide; then
     log "Installing zoxide..."
     curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash
