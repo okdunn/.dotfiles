@@ -7,7 +7,15 @@ if [[ ! -d "$PROJECTS_DIR" ]]; then
   exit 1
 fi
 
-PROJECT=$(ls -1 "$PROJECTS_DIR" | fzf --prompt="Select a project: " --height=40%)
+if [[ -n "$1" ]]; then
+  PROJECT=$(ls -1 "$PROJECTS_DIR" | grep -i "$1" | head -1)
+  if [[ -z "$PROJECT" ]]; then
+    echo "No project matching '$1'."
+    exit 1
+  fi
+else
+  PROJECT=$(ls -1 "$PROJECTS_DIR" | fzf --prompt="Select a project: " --height=40%)
+fi
 
 if [[ -z "$PROJECT" ]]; then
   echo "No project selected."
@@ -19,7 +27,7 @@ SESSION_NAME=$(basename "$PROJECT" | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
 
 cd "$PROJECT_PATH"
 
-SESSION_STATUS=$(NO_COLOR=1 zellij list-sessions 2>/dev/null | grep "^$SESSION_NAME ")
+SESSION_STATUS=$(zellij list-sessions 2>/dev/null | sed $'s/\033\[[0-9;]*m//g' | grep "^$SESSION_NAME ")
 
 if [[ -n "$SESSION_STATUS" ]] && ! echo "$SESSION_STATUS" | grep -q "EXITED"; then
   zellij attach "$SESSION_NAME"
