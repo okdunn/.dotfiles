@@ -15,9 +15,52 @@ if [[ -z "$PROJECT" ]]; then
 fi
 
 PROJECT_PATH="$PROJECTS_DIR/$PROJECT"
-
 SESSION_NAME=$(basename "$PROJECT" | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
 
-cd $PROJECT_PATH
+cd "$PROJECT_PATH"
 
-zellij attach "$SESSION_NAME" --create
+SESSION_STATUS=$(NO_COLOR=1 zellij list-sessions 2>/dev/null | grep "^$SESSION_NAME ")
+
+if [[ -n "$SESSION_STATUS" ]] && ! echo "$SESSION_STATUS" | grep -q "EXITED"; then
+  zellij attach "$SESSION_NAME"
+  exit $?
+fi
+
+# Remove any dead/exited session with this name before creating fresh
+zellij delete-session "$SESSION_NAME" 2>/dev/null || true
+
+LAYOUT=$(mktemp /tmp/zellij-layout-XXXXXX.kdl)
+cat > "$LAYOUT" <<EOF
+layout {
+    default_tab_template {
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+        children
+        pane size=1 borderless=true {
+            plugin location="zellij:status-bar"
+        }
+    }
+    tab name="editor" {
+        pane {
+            command "nvim"
+            args "."
+        }
+    }
+    tab name="claude" {
+        pane {
+            command "claude"
+        }
+    }
+    tab name="git" {
+        pane {
+            command "lazygit"
+        }
+    }
+    tab name="shell" {
+        pane
+    }
+}
+EOF
+zellij --session "$SESSION_NAME" --new-session-with-layout "$LAYOUT"
+rm -f "$LAYOUT"
