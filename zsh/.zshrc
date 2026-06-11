@@ -34,3 +34,5 @@ command -v thefuck &>/dev/null && eval "$(thefuck --alias)"
 
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+. "$HOME/.atuin/bin/env"
