@@ -32,6 +32,18 @@ if [[ "$STOW_ONLY" != "true" ]]; then
     log "Installing Antidote..."
     git clone https://github.com/mattmc3/antidote.git "$HOME/.antidote"
   fi
+
+  if ! require_cmd claude; then
+    log "Installing Claude Code..."
+    mise exec node@lts -- npm install -g @anthropic-ai/claude-code
+  fi
+
+  if ! require_cmd cht.sh; then
+    log "Installing cht.sh..."
+    mkdir -p "$HOME/.local/bin"
+    curl -s https://cht.sh/:cht.sh > "$HOME/.local/bin/cht.sh"
+    chmod +x "$HOME/.local/bin/cht.sh"
+  fi
 fi
 
 stow_packages "zsh-macos"

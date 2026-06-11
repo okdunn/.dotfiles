@@ -113,6 +113,48 @@ if [[ "$STOW_ONLY" != "true" ]]; then
       sudo make install
     )
   fi
+
+  if ! require_cmd tldr; then
+    log "Installing tealdeer (tldr)..."
+    TEALDEER_VERSION=$(curl -s "https://api.github.com/repos/dbrgn/tealdeer/releases/latest" \
+      | grep -Po '"tag_name": *"v\K[^"]*')
+    [[ -n "$TEALDEER_VERSION" ]] || { log "Failed to fetch tealdeer version from GitHub API"; exit 1; }
+    curl -Lo "$HOME/tldr" \
+      "https://github.com/dbrgn/tealdeer/releases/download/v${TEALDEER_VERSION}/tealdeer-linux-x86_64-musl"
+    sudo install "$HOME/tldr" -D -t /usr/local/bin/
+    rm -f "$HOME/tldr"
+  fi
+
+  if ! require_cmd thefuck; then
+    log "Installing thefuck..."
+    if ! require_cmd pipx; then
+      sudo apt install -y pipx
+    fi
+    pipx install thefuck
+  fi
+
+  if ! require_cmd lazydocker; then
+    log "Installing lazydocker..."
+    LAZYDOCKER_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazydocker/releases/latest" \
+      | grep -Po '"tag_name": *"v\K[^"]*')
+    [[ -n "$LAZYDOCKER_VERSION" ]] || { log "Failed to fetch lazydocker version from GitHub API"; exit 1; }
+    curl -Lo "$HOME/lazydocker.tar.gz" \
+      "https://github.com/jesseduffield/lazydocker/releases/download/v${LAZYDOCKER_VERSION}/lazydocker_${LAZYDOCKER_VERSION}_Linux_x86_64.tar.gz"
+    tar xf "$HOME/lazydocker.tar.gz" -C "$HOME" lazydocker
+    sudo install "$HOME/lazydocker" -D -t /usr/local/bin/
+    rm -f "$HOME/lazydocker" "$HOME/lazydocker.tar.gz"
+  fi
+
+  if ! require_cmd claude; then
+    log "Installing Claude Code..."
+    mise exec node@lts -- npm install -g @anthropic-ai/claude-code
+  fi
+
+  if ! require_cmd cht.sh; then
+    log "Installing cht.sh..."
+    curl -s https://cht.sh/:cht.sh | sudo tee /usr/local/bin/cht.sh > /dev/null
+    sudo chmod +x /usr/local/bin/cht.sh
+  fi
 fi
 
 stow_packages "zsh-debian"

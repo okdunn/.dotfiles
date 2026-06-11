@@ -22,6 +22,7 @@ alias tree="eza --tree"
 alias vim="nvim"
 vi() { (( $# )) && nvim "$@" || nvim . }
 alias lg="lazygit"
+alias lzd="lazydocker"
 alias cat="bat --pager=never"
 
 bindkey -v
@@ -29,6 +30,7 @@ bindkey -s ^f "zp\n"
 
 eval "$(zoxide init zsh)"
 eval "$(atuin init zsh)"
+command -v thefuck &>/dev/null && eval "$(thefuck --alias)"
 
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
