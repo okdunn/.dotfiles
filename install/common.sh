@@ -28,7 +28,7 @@ backup_conflicts() {
         mv "$target" "$backup_dir/$rel"
         backed_up=1
       fi
-    done < <(find "$DOTFILES_DIR/$pkg" \( -type f -o -type d \) -not -path "$DOTFILES_DIR/$pkg" -print0)
+    done < <(find "$DOTFILES_DIR/$pkg" -type f -print0)
   done
 
   [[ $backed_up -eq 1 ]] && log "Conflicts backed up to $backup_dir"
