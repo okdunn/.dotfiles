@@ -63,7 +63,7 @@ if [[ "$STOW_ONLY" != "true" ]]; then
 
   if ! require_cmd atuin; then
     log "Installing atuin..."
-    curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh
+    bash <(curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh) || true
   fi
 
   if ! require_cmd lazygit; then
