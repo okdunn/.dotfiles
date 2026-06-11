@@ -43,4 +43,4 @@ stow_packages() {
   stow --dir="$DOTFILES_DIR" --target="$HOME" "${all_pkgs[@]}"
 }
 
-PACKAGES=(claude git lazygit nvim scripts wezterm zellij zsh)
+PACKAGES=(claude git lazygit mise nvim scripts wezterm zellij zsh)
