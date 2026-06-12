@@ -1,13 +1,16 @@
 return {
   {
-    "nyoom-engineering/oxocarbon.nvim",
+    "catppuccin/nvim",
+    name = "catppuccin",
     priority = 1000,
+    opts = {
+      flavour = "mocha",
+    },
   },
   {
     "LazyVim/LazyVim",
     opts = {
-      colorscheme = "oxocarbon",
+      colorscheme = "catppuccin",
     },
   },
 }
-
