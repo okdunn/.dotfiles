@@ -24,10 +24,10 @@ return {
                    \__\/         \__\/         \__\/    
         ]],
           align = "center",
+          padding = 8,
         },
-        { section = "recent_files", limit = 7, padding = 1 },
+        { section = "recent_files", limit = 7 },
       },
     },
   },
 }
-
