@@ -73,6 +73,7 @@ if [ -z "$TMUX_POWERLINE_RIGHT_STATUS_SEGMENTS" ]; then
     "cpu_icon $peach $base"
     "mem_used $peach $base"
     "disk_icon $peach $base"
+    "whoami_icon $lavender $base"
     "time $mauve $base"
   )
 fi
