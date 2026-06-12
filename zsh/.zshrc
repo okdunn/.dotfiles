@@ -20,7 +20,7 @@ alias l="eza"
 alias ll="eza -alh"
 alias tree="eza --tree"
 alias vim="nvim"
-vi() { (( $# )) && nvim "$@" || nvim . }
+vi() { (( $# )) && nvim "$@" || nvim }
 alias lg="lazygit"
 alias lzd="lazydocker"
 alias cat="bat --pager=never"
