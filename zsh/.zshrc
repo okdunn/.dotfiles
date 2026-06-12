@@ -28,11 +28,11 @@ alias cat="bat --pager=never"
 bindkey -v
 bindkey -s ^f "zp\n"
 
-eval "$(zoxide init zsh)"
+. "$HOME/.atuin/bin/env"
+
+eval "$(zoxide init zsh --cmd cd)"
 eval "$(atuin init zsh)"
 command -v thefuck &>/dev/null && eval "$(thefuck --alias)"
 
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-
-. "$HOME/.atuin/bin/env"
