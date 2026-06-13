@@ -1,5 +1,29 @@
 [tools]
-node = "lts"
+# languages
+node   = ["lts", "latest"]
+go     = "latest"
+rust   = ["stable", "nightly"]
 python = "latest"
-go = "latest"
-fzf = "latest"
+java   = ["lts", "latest"]
+dotnet = ["8", "9"]
+ruby   = "latest"
+lua    = "latest"
+
+# editors & git
+neovim     = "latest"
+lazygit    = "latest"
+lazydocker = "latest"
+
+# cli tools
+uv     = "latest"
+eza    = "latest"
+zoxide = "latest"
+atuin  = "latest"
+delta  = "latest"
+gh     = "latest"
+fzf    = "latest"
+
+[settings]
+
+[settings.ruby]
+compile = false

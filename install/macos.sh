@@ -48,6 +48,9 @@ fi
 
 stow_packages "zsh-macos"
 
+log "Running mise install..."
+mise install
+
 log "Installing Neovim plugins..."
 nvim --headless "+Lazy! sync" +qa 2>/dev/null || true
 
