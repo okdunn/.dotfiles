@@ -42,8 +42,8 @@ TMUX_POWERLINE_DEFAULT_RIGHTSIDE_SEPARATOR=${TMUX_POWERLINE_DEFAULT_RIGHTSIDE_SE
 # shellcheck disable=SC2128
 if [ -z "$TMUX_POWERLINE_WINDOW_STATUS_CURRENT" ]; then
   TMUX_POWERLINE_WINDOW_STATUS_CURRENT=(
-    "#{?#{==:#{window_index},0},,#[fg=$base,bg=$mauve]${TMUX_POWERLINE_SEPARATOR_RIGHT_BOLD}}"
-    "#[fg=$base,bg=$mauve] #W "
+    "#{?#{==:#{window_index},1},,#[fg=$base,bg=$mauve]${TMUX_POWERLINE_SEPARATOR_RIGHT_BOLD}}"
+    "#[fg=$base,bg=$mauve] ✦ #W "
     "#[fg=$mauve,bg=$base]${TMUX_POWERLINE_SEPARATOR_RIGHT_BOLD}"
   )
 fi
@@ -58,7 +58,7 @@ fi
 # shellcheck disable=SC2128
 if [ -z "$TMUX_POWERLINE_WINDOW_STATUS_FORMAT" ]; then
   TMUX_POWERLINE_WINDOW_STATUS_FORMAT=(
-    "#{?#{==:#{window_index},0},,#[fg=$base,bg=$surface1]${TMUX_POWERLINE_SEPARATOR_RIGHT_BOLD}}"
+    "#{?#{==:#{window_index},1},,#[fg=$base,bg=$surface1]${TMUX_POWERLINE_SEPARATOR_RIGHT_BOLD}}"
     "#[fg=$overlay1,bg=$surface1] #W "
     "#[fg=$surface1,bg=$base]${TMUX_POWERLINE_SEPARATOR_RIGHT_BOLD}"
   )
