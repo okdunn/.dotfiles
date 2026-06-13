@@ -49,33 +49,20 @@
     command_execution_time  # duration of the last command
     background_jobs         # presence of background jobs
     direnv                  # direnv status (https://direnv.net/)
-    mise                    # mise version manager (https://github.com/jdx/mise)
-    asdf                    # asdf version manager (https://github.com/asdf-vm/asdf)
-    virtualenv              # python virtual environment (https://docs.python.org/3/library/venv.html)
-    anaconda                # conda environment (https://conda.io/)
-    pyenv                   # python environment (https://github.com/pyenv/pyenv)
-    goenv                   # go environment (https://github.com/syndbg/goenv)
-    nodenv                  # node.js version from nodenv (https://github.com/nodenv/nodenv)
-    nvm                     # node.js version from nvm (https://github.com/nvm-sh/nvm)
-    nodeenv                 # node.js environment (https://github.com/ekalinin/nodeenv)
-    # node_version          # node.js version
-    # go_version            # go version (https://golang.org)
-    # rust_version          # rustc version (https://www.rust-lang.org)
-    # dotnet_version        # .NET version (https://dotnet.microsoft.com)
+    node_version            # node.js version
+    go_version              # go version (https://golang.org)
+    rust_version            # rustc version (https://www.rust-lang.org)
+    python_version          # python version (custom)
+    java_version            # java version
+    dotnet_version          # c# / .net version
+    ruby_version            # ruby version (custom)
+    cpp_version             # c++ version (custom)
+    c_version               # c version (custom)
+    lua_version             # lua version (custom)
+    lisp_version            # lisp version (custom)
     # php_version           # php version (https://www.php.net/)
     # laravel_version       # laravel php framework version (https://laravel.com/)
-    # java_version          # java version (https://www.java.com/)
     # package               # name@version from package.json (https://docs.npmjs.com/files/package.json)
-    rbenv                   # ruby version from rbenv (https://github.com/rbenv/rbenv)
-    rvm                     # ruby version from rvm (https://rvm.io)
-    fvm                     # flutter version management (https://github.com/leoafarias/fvm)
-    luaenv                  # lua version from luaenv (https://github.com/cehoffman/luaenv)
-    jenv                    # java version from jenv (https://github.com/jenv/jenv)
-    plenv                   # perl version from plenv (https://github.com/tokuhirom/plenv)
-    perlbrew                # perl version from perlbrew (https://github.com/gugod/App-perlbrew)
-    phpenv                  # php version from phpenv (https://github.com/phpenv/phpenv)
-    scalaenv                # scala version from scalaenv (https://github.com/scalaenv/scalaenv)
-    haskell_stack           # haskell version from stack (https://haskellstack.org/)
     kubecontext             # current kubernetes context (https://kubernetes.io/)
     terraform               # terraform workspace (https://www.terraform.io)
     # terraform_version     # terraform version (https://www.terraform.io)
@@ -85,7 +72,6 @@
     gcloud                  # google cloud cli account and project (https://cloud.google.com/)
     google_app_cred         # google application credentials (https://cloud.google.com/docs/authentication/production)
     toolbox                 # toolbox name (https://github.com/containers/toolbox)
-    context                 # user@hostname
     nordvpn                 # nordvpn connection status, linux only (https://nordvpn.com/)
     ranger                  # ranger shell (https://github.com/ranger/ranger)
     yazi                    # yazi shell (https://github.com/sxyazi/yazi)
@@ -107,7 +93,6 @@
     taskwarrior             # taskwarrior task count (https://taskwarrior.org/)
     per_directory_history   # Oh My Zsh per-directory-history local/global indicator
     # cpu_arch              # CPU architecture
-    time                    # current time
     # =========================[ Line #2 ]=========================
     newline
     # ip                    # ip address and bandwidth usage for a specified network interface
@@ -1086,7 +1071,7 @@
   # Show node version only when in a directory tree containing package.json.
   typeset -g POWERLEVEL9K_NODE_VERSION_PROJECT_ONLY=true
   # Custom icon.
-  # typeset -g POWERLEVEL9K_NODE_VERSION_VISUAL_IDENTIFIER_EXPANSION='⭐'
+  typeset -g POWERLEVEL9K_NODE_VERSION_VISUAL_IDENTIFIER_EXPANSION=$''
 
   #######################[ go_version: go version (https://golang.org) ]########################
   # Go version color.
@@ -1094,7 +1079,7 @@
   # Show go version only when in a go project subdirectory.
   typeset -g POWERLEVEL9K_GO_VERSION_PROJECT_ONLY=true
   # Custom icon.
-  # typeset -g POWERLEVEL9K_GO_VERSION_VISUAL_IDENTIFIER_EXPANSION='⭐'
+  typeset -g POWERLEVEL9K_GO_VERSION_VISUAL_IDENTIFIER_EXPANSION=$''
 
   #################[ rust_version: rustc version (https://www.rust-lang.org) ]##################
   # Rust version color.
@@ -1102,7 +1087,7 @@
   # Show rust version only when in a rust project subdirectory.
   typeset -g POWERLEVEL9K_RUST_VERSION_PROJECT_ONLY=true
   # Custom icon.
-  # typeset -g POWERLEVEL9K_RUST_VERSION_VISUAL_IDENTIFIER_EXPANSION='⭐'
+  typeset -g POWERLEVEL9K_RUST_VERSION_VISUAL_IDENTIFIER_EXPANSION=$''
 
   ###############[ dotnet_version: .NET version (https://dotnet.microsoft.com) ]################
   # .NET version color.
@@ -1110,7 +1095,7 @@
   # Show .NET version only when in a .NET project subdirectory.
   typeset -g POWERLEVEL9K_DOTNET_VERSION_PROJECT_ONLY=true
   # Custom icon.
-  # typeset -g POWERLEVEL9K_DOTNET_VERSION_VISUAL_IDENTIFIER_EXPANSION='⭐'
+  typeset -g POWERLEVEL9K_DOTNET_VERSION_VISUAL_IDENTIFIER_EXPANSION=$''
 
   #####################[ php_version: php version (https://www.php.net/) ]######################
   # PHP version color.
@@ -1147,7 +1132,7 @@
   # Show brief version.
   typeset -g POWERLEVEL9K_JAVA_VERSION_FULL=false
   # Custom icon.
-  # typeset -g POWERLEVEL9K_JAVA_VERSION_VISUAL_IDENTIFIER_EXPANSION='⭐'
+  typeset -g POWERLEVEL9K_JAVA_VERSION_VISUAL_IDENTIFIER_EXPANSION=$''
 
   ###[ package: name@version from package.json (https://docs.npmjs.com/files/package.json) ]####
   # Package color.
@@ -1721,6 +1706,99 @@
     # instant_prompt_example. This will give us the same `example` prompt segment in the instant
     # and regular prompts.
     prompt_example
+  }
+
+  # Python version segment: shows  icon + version when in a Python project directory.
+  # Detects: pyproject.toml, setup.py, setup.cfg, requirements.txt, Pipfile, .python-version
+  function prompt_python_version() {
+    local -a markers=(pyproject.toml setup.py setup.cfg requirements.txt Pipfile .python-version)
+    local found=0
+    for f in $markers; do
+      [[ -f $f ]] && found=1 && break
+    done
+    (( found )) || return
+
+    local version
+    if [[ -f .python-version ]]; then
+      version=$(<.python-version)
+      version=${version%%$'\n'*}
+    else
+      version=$(python3 --version 2>/dev/null) || return
+      version=${version#Python }
+    fi
+    p10k segment -f '#f9e2af' -i $'' -t "$version"
+  }
+
+
+  # Ruby: detects Gemfile, .ruby-version, *.gemspec
+  function prompt_ruby_version() {
+    local found=0
+    for f in Gemfile Gemfile.lock .ruby-version; do
+      [[ -f $f ]] && found=1 && break
+    done
+    if (( ! found )); then
+      local -a gems=(*.gemspec(N))
+      (( ${#gems} )) && found=1
+    fi
+    (( found )) || return
+    local version
+    version=$(ruby --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+') || return
+    p10k segment -f '#f38ba8' -i $'' -t "$version"
+  }
+
+  # C++: detects CMakeLists.txt, meson.build, vcpkg.json, *.cpp, *.cxx, *.cc, *.hpp
+  function prompt_cpp_version() {
+    local found=0
+    for f in CMakeLists.txt meson.build vcpkg.json; do
+      [[ -f $f ]] && found=1 && break
+    done
+    if (( ! found )); then
+      local -a src=(*.cpp(N) *.cxx(N) *.cc(N) *.hpp(N))
+      (( ${#src} )) && found=1
+    fi
+    (( found )) || return
+    local version
+    version=$(c++ --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?') || return
+    p10k segment -f '#89b4fa' -i $'' -t "$version"
+  }
+
+  # C: detects *.c or *.h only when no C++ markers are present
+  function prompt_c_version() {
+    for f in CMakeLists.txt meson.build vcpkg.json; do
+      [[ -f $f ]] && return
+    done
+    local -a cpp_src=(*.cpp(N) *.cxx(N) *.cc(N) *.hpp(N))
+    (( ${#cpp_src} )) && return
+    local -a c_src=(*.c(N) *.h(N))
+    (( ${#c_src} )) || return
+    local version
+    version=$(cc --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?') || return
+    p10k segment -f '#74c7ec' -i $'' -t "$version"
+  }
+
+  # Lua: detects .lua-version, *.rockspec, *.lua
+  function prompt_lua_version() {
+    local found=0
+    [[ -f .lua-version ]] && found=1
+    if (( ! found )); then
+      local -a src=(*.lua(N) *.rockspec(N))
+      (( ${#src} )) && found=1
+    fi
+    (( found )) || return
+    local version
+    version=$(lua -v 2>&1 | grep -oE '[0-9]+\.[0-9]+\.?[0-9]*') || return
+    p10k segment -f '#89b4fa' -i $'' -t "$version"
+  }
+
+  # Lisp: detects *.lisp, *.asd, *.cl; tries sbcl then clisp
+  function prompt_lisp_version() {
+    local -a src=(*.lisp(N) *.asd(N) *.cl(N))
+    (( ${#src} )) || return
+    local version
+    version=$(sbcl --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.?[0-9]*')
+    [[ -z $version ]] && version=$(clisp --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.?[0-9]*')
+    [[ -z $version ]] && return
+    p10k segment -f '#cba6f7' -i $'' -t "$version"
   }
 
   # User-defined prompt segments can be customized the same way as built-in segments.
