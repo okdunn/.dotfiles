@@ -14,35 +14,62 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
+local function get_mise_langs()
+  local config_path = vim.fn.expand("~/.config/mise/config.toml")
+  local f = io.open(config_path, "r")
+  if not f then return {} end
+  local in_tools = false
+  local langs = {}
+  for line in f:lines() do
+    if line:match("^%[tools%]") then
+      in_tools = true
+    elseif line:match("^%[") then
+      in_tools = false
+    elseif in_tools then
+      local lang = line:match("^(%w+)%s*=")
+      if lang then langs[lang] = true end
+    end
+  end
+  f:close()
+  return langs
+end
+
+local extras_map = {
+  node = "lazyvim.plugins.extras.lang.typescript",
+  go = "lazyvim.plugins.extras.lang.go",
+  rust = "lazyvim.plugins.extras.lang.rust",
+  python = "lazyvim.plugins.extras.lang.python",
+  java = "lazyvim.plugins.extras.lang.java",
+  ruby = "lazyvim.plugins.extras.lang.ruby",
+  dotnet = "lazyvim.plugins.extras.lang.dotnet",
+}
+
+local langs = get_mise_langs()
+local spec = {
+  { "LazyVim/LazyVim", import = "lazyvim.plugins" },
+}
+for lang, extra in pairs(extras_map) do
+  if langs[lang] then
+    table.insert(spec, { import = extra })
+  end
+end
+table.insert(spec, { import = "plugins" })
+
 require("lazy").setup({
-  spec = {
-    -- add LazyVim and import its plugins
-    { "LazyVim/LazyVim", import = "lazyvim.plugins" },
-    -- import/override with your plugins
-    { import = "plugins" },
-  },
+  spec = spec,
   defaults = {
-    -- By default, only LazyVim plugins will be lazy-loaded. Your custom plugins will load during startup.
-    -- If you know what you're doing, you can set this to `true` to have all your custom plugins lazy-loaded by default.
     lazy = false,
-    -- It's recommended to leave version=false for now, since a lot the plugin that support versioning,
-    -- have outdated releases, which may break your Neovim install.
-    version = false, -- always use the latest git commit
-    -- version = "*", -- try installing the latest stable version for plugins that support semver
+    version = false,
   },
   install = { colorscheme = { "tokyonight", "habamax" } },
   checker = {
-    enabled = true, -- check for plugin updates periodically
-    notify = false, -- notify on update
-  }, -- automatically check for plugin updates
+    enabled = true,
+    notify = false,
+  },
   performance = {
     rtp = {
-      -- disable some rtp plugins
       disabled_plugins = {
         "gzip",
-        -- "matchit",
-        -- "matchparen",
-        -- "netrwPlugin",
         "tarPlugin",
         "tohtml",
         "tutor",
