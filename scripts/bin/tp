@@ -1,0 +1,47 @@
+#!/usr/bin/env zsh
+
+if [[ -n "$1" ]]; then
+  PROJECT_PATH=$(find "$HOME" -maxdepth 5 -name ".git" -type d -prune 2>/dev/null \
+    | sed 's|/.git$||' \
+    | grep -i "$1" | head -1)
+  if [[ -z "$PROJECT_PATH" ]]; then
+    echo "No project matching '$1'."
+    exit 1
+  fi
+else
+  PROJECT_PATH=$(find "$HOME" -maxdepth 5 -name ".git" -type d -prune 2>/dev/null \
+    | sed 's|/.git$||' \
+    | fzf --prompt="Select a project: " --height=40%)
+fi
+
+if [[ -z "$PROJECT_PATH" ]]; then
+  echo "No project selected."
+  exit 0
+fi
+
+SESSION_NAME=$(basename "$PROJECT_PATH" | tr '[:upper:]' '[:lower:]' | tr ' .' '_')
+
+if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+  if [[ -n "$TMUX" ]]; then
+    tmux switch-client -t "$SESSION_NAME"
+  else
+    tmux attach-session -t "$SESSION_NAME"
+  fi
+  exit $?
+fi
+
+tmux new-session -d -s "$SESSION_NAME" -c "$PROJECT_PATH" -n "claude"
+tmux send-keys -t "$SESSION_NAME:claude" "claude" Enter
+
+tmux new-window -t "$SESSION_NAME" -n "nvim" -c "$PROJECT_PATH"
+tmux send-keys -t "$SESSION_NAME:nvim" "nvim ." Enter
+
+tmux new-window -t "$SESSION_NAME" -n "shell" -c "$PROJECT_PATH"
+
+tmux select-window -t "$SESSION_NAME:claude"
+
+if [[ -n "$TMUX" ]]; then
+  tmux switch-client -t "$SESSION_NAME"
+else
+  tmux attach-session -t "$SESSION_NAME"
+fi
