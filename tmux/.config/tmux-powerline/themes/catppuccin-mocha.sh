@@ -42,8 +42,8 @@ TMUX_POWERLINE_DEFAULT_RIGHTSIDE_SEPARATOR=${TMUX_POWERLINE_DEFAULT_RIGHTSIDE_SE
 # shellcheck disable=SC2128
 if [ -z "$TMUX_POWERLINE_WINDOW_STATUS_CURRENT" ]; then
   TMUX_POWERLINE_WINDOW_STATUS_CURRENT=(
-    "#{?#{==:#{window_index},1},,#[fg=$base,bg=$mauve]${TMUX_POWERLINE_SEPARATOR_RIGHT_BOLD}}"
-    "#[fg=$base,bg=$mauve] ✦ #W "
+    "#[fg=$base,bg=$mauve]${TMUX_POWERLINE_SEPARATOR_RIGHT_BOLD}"
+    "#[fg=$base,bg=$mauve] ✦ #I #W "
     "#[fg=$mauve,bg=$base]${TMUX_POWERLINE_SEPARATOR_RIGHT_BOLD}"
   )
 fi
@@ -58,22 +58,21 @@ fi
 # shellcheck disable=SC2128
 if [ -z "$TMUX_POWERLINE_WINDOW_STATUS_FORMAT" ]; then
   TMUX_POWERLINE_WINDOW_STATUS_FORMAT=(
-    "#{?#{==:#{window_index},1},,#[fg=$base,bg=$surface1]${TMUX_POWERLINE_SEPARATOR_RIGHT_BOLD}}"
-    "#[fg=$overlay1,bg=$surface1] #W "
-    "#[fg=$surface1,bg=$base]${TMUX_POWERLINE_SEPARATOR_RIGHT_BOLD}"
+    "#[fg=$base,bg=$surface0]${TMUX_POWERLINE_SEPARATOR_RIGHT_BOLD}"
+    "#[fg=$overlay1,bg=$surface0] #I #W "
+    "#[fg=$surface0,bg=$base]${TMUX_POWERLINE_SEPARATOR_RIGHT_BOLD}"
   )
 fi
 
-TMUX_POWERLINE_LEFT_STATUS_SEGMENTS=()
+TMUX_POWERLINE_LEFT_STATUS_SEGMENTS=(
+  "whoami_icon $lavender $base"
+  "tmux_session_info $mauve $base"
+)
 
 # shellcheck disable=SC1143,SC2128
-if [ -z "$TMUX_POWERLINE_RIGHT_STATUS_SEGMENTS" ]; then
-  TMUX_POWERLINE_RIGHT_STATUS_SEGMENTS=(
-    "ifstat_sys $teal $base"
-    "cpu_icon $peach $base"
-    "mem_used $peach $base"
-    "disk_icon $peach $base"
-    "whoami_icon $lavender $base"
-    "time $mauve $base"
-  )
-fi
+TMUX_POWERLINE_RIGHT_STATUS_SEGMENTS=(
+  "cpu_icon $surface0 $overlay1"
+  "mem_used $surface0 $overlay1"
+  "disk_icon $surface0 $overlay1"
+  "time $mauve $base"
+)
