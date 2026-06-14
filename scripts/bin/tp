@@ -30,15 +30,15 @@ if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
   exit $?
 fi
 
-tmux new-session -d -s "$SESSION_NAME" -c "$PROJECT_PATH" -n "claude"
-tmux send-keys -t "$SESSION_NAME:claude" "claude" Enter
+tmux new-session -d -s "$SESSION_NAME" -c "$PROJECT_PATH"
+tmux send-keys -t "$SESSION_NAME:1" "claude" Enter
 
-tmux new-window -t "$SESSION_NAME" -n "nvim" -c "$PROJECT_PATH"
-tmux send-keys -t "$SESSION_NAME:nvim" "nvim ." Enter
+tmux new-window -t "$SESSION_NAME" -c "$PROJECT_PATH"
+tmux send-keys -t "$SESSION_NAME:2" "nvim ." Enter
 
-tmux new-window -t "$SESSION_NAME" -n "shell" -c "$PROJECT_PATH"
+tmux new-window -t "$SESSION_NAME" -c "$PROJECT_PATH"
 
-tmux select-window -t "$SESSION_NAME:claude"
+tmux select-window -t "$SESSION_NAME:1"
 
 if [[ -n "$TMUX" ]]; then
   tmux switch-client -t "$SESSION_NAME"
