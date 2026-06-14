@@ -14,6 +14,6 @@ run_segment() {
   else
     icon=$''
   fi
-  printf ' %s %s@%s' "$icon" "$(whoami)" "$(hostname -s)"
+  printf '%s %s@%s' "$icon" "$(whoami)" "$(hostname -s)"
   return 0
 }
