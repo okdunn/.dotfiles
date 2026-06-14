@@ -68,7 +68,7 @@ fi
 
 TMUX_POWERLINE_LEFT_STATUS_SEGMENTS=(
   "whoami_icon $lavender $base"
-  "tmux_session_info $mauve $base"
+  "tmux_session_info $surface0 $overlay1"
 )
 
 # shellcheck disable=SC1143,SC2128
