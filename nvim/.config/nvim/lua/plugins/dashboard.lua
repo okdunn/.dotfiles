@@ -8,7 +8,6 @@ return {
     dashboard = {
       width = 76,
       sections = {
-        { text = string.format("NVIM %s", vim.version()), align = "center", padding = 2 },
         {
           text = [[
      _____          ___           ___           ___     
@@ -24,9 +23,10 @@ return {
                    \__\/         \__\/         \__\/    
         ]],
           align = "center",
-          padding = 8,
+          padding = 2,
         },
-        { section = "recent_files", limit = 7 },
+        { section = "keys", gap = 1, padding = 1 },
+        { icon = " ", title = "Projects", section = "projects", indent = 2, padding = 1 },
       },
     },
   },
