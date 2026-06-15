@@ -22,6 +22,7 @@ atuin  = "latest"
 delta  = "latest"
 gh     = "latest"
 fzf    = "latest"
+tmux   = "latest"
 
 [settings]
 
