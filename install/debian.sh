@@ -1,79 +1,113 @@
 #!/usr/bin/env bash
+# Usage: debian.sh [--stow-only] [--desktop]
+#   --stow-only  only (re)link dotfiles; skip apt and tool installs
+#   --desktop    also install the Nerd Font and stow wezterm (skip on headless servers)
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 
 STOW_ONLY=false
-[[ "${1:-}" == "--stow-only" ]] && STOW_ONLY=true
+DESKTOP=false
+for arg in "$@"; do
+  case "$arg" in
+    --stow-only) STOW_ONLY=true ;;
+    --desktop)   DESKTOP=true ;;
+    *) echo "Unknown option: $arg" >&2; exit 1 ;;
+  esac
+done
+
+# Tools installed below (mise, claude) land here
+export PATH="$HOME/.local/bin:$PATH"
 
 APT_PACKAGES=(
   build-essential curl git wget unzip stow
   zsh ripgrep fd-find bat
   chafa tealdeer
 )
+$DESKTOP && APT_PACKAGES+=(fontconfig)
+
+install_nerd_font() {
+  if fc-list | grep -qi "JetBrainsMono Nerd Font"; then return; fi
+  log "Installing JetBrains Mono Nerd Font..."
+  local tmp
+  tmp="$(mktemp -d)"
+  curl -fsSL -o "$tmp/JetBrainsMono.tar.xz" \
+    "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.tar.xz"
+  mkdir -p "$HOME/.local/share/fonts/JetBrainsMonoNerdFont"
+  tar xf "$tmp/JetBrainsMono.tar.xz" -C "$HOME/.local/share/fonts/JetBrainsMonoNerdFont"
+  fc-cache -f
+  rm -rf "$tmp"
+}
 
 if [[ "$STOW_ONLY" != "true" ]]; then
-  log "Updating apt and installing packages..."
-  sudo apt update -y
-  sudo apt upgrade -y
-  sudo apt install -y "${APT_PACKAGES[@]}"
+  log "Installing apt packages..."
+  sudo apt-get update
+  sudo apt-get install -y "${APT_PACKAGES[@]}"
+
+  # Debian ships fd/bat as fdfind/batcat
+  mkdir -p "$HOME/.local/bin"
+  require_cmd fd  || ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
+  require_cmd bat || ln -sf "$(command -v batcat)" "$HOME/.local/bin/bat"
 
   if ! require_cmd mise; then
     log "Installing mise..."
-    curl https://mise.run | sh
+    curl -fsSL https://mise.run | sh
   fi
 
   if [[ ! -d "$HOME/.antidote" ]]; then
     log "Installing Antidote..."
-    git clone https://github.com/mattmc3/antidote.git "$HOME/.antidote"
-  fi
-
-  if ! fc-list | grep -qi "JetBrainsMono Nerd Font"; then
-    log "Installing JetBrains Mono Nerd Font..."
-    FONT_VERSION=$(curl -s "https://api.github.com/repos/ryanoasis/nerd-fonts/releases/latest" \
-      | grep -Po '"tag_name": *"\K[^"]*' || true)
-    [[ -n "$FONT_VERSION" ]] || { log "Failed to fetch nerd-fonts version"; exit 1; }
-    curl -Lo "$HOME/JetBrainsMono.tar.xz" \
-      "https://github.com/ryanoasis/nerd-fonts/releases/download/${FONT_VERSION}/JetBrainsMono.tar.xz"
-    mkdir -p "$HOME/.local/share/fonts/JetBrainsMonoNerdFont"
-    tar xf "$HOME/JetBrainsMono.tar.xz" -C "$HOME/.local/share/fonts/JetBrainsMonoNerdFont"
-    fc-cache -f
-    rm -f "$HOME/JetBrainsMono.tar.xz"
-  fi
-
-if ! require_cmd thefuck; then
-    log "Installing thefuck..."
-    if ! require_cmd pipx; then
-      sudo apt install -y pipx
-    fi
-    pipx install thefuck
+    git clone --depth=1 https://github.com/mattmc3/antidote.git "$HOME/.antidote"
   fi
 
   if ! require_cmd cht.sh; then
     log "Installing cht.sh..."
-    curl -s https://cht.sh/:cht.sh | sudo tee /usr/local/bin/cht.sh > /dev/null
-    sudo chmod +x /usr/local/bin/cht.sh
+    curl -fsSL https://cht.sh/:cht.sh -o "$HOME/.local/bin/cht.sh"
+    chmod +x "$HOME/.local/bin/cht.sh"
   fi
 
+  if ! require_cmd claude; then
+    log "Installing Claude Code..."
+    curl -fsSL https://claude.ai/install.sh | bash
+  fi
+
+  $DESKTOP && install_nerd_font
 fi
 
-stow_packages "zsh-debian"
+if $DESKTOP; then stow_packages wezterm; else stow_packages; fi
+
+if $STOW_ONLY; then
+  log "Done (stow only)."
+  exit 0
+fi
+
+if [[ ! -f "$HOME/.gitconfig.local" && -t 0 ]]; then
+  log "Creating ~/.gitconfig.local (git identity for this machine)..."
+  read -rp "  git user.name:  " git_name
+  read -rp "  git user.email: " git_email
+  git config --file "$HOME/.gitconfig.local" user.name "$git_name"
+  git config --file "$HOME/.gitconfig.local" user.email "$git_email"
+fi
 
 log "Running mise install..."
 mise install
+eval "$(mise activate bash --shims)"
 
-if ! require_cmd claude; then
-  log "Installing Claude Code..."
-  mise exec node@lts -- npm install -g @anthropic-ai/claude-code
+if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
+  log "Installing tmux plugin manager..."
+  git clone --depth=1 https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
 fi
+log "Installing tmux plugins..."
+"$HOME/.tmux/plugins/tpm/bin/install_plugins" || warn "tmux plugin install failed"
 
 log "Installing Neovim plugins..."
-nvim --headless "+Lazy! sync" +qa 2>/dev/null || true
+# restore = install the exact versions pinned in lazy-lock.json
+nvim --headless "+Lazy! restore" +qa || warn "Neovim plugin install failed; run :Lazy restore manually"
 
-if [[ "$SHELL" != "$(command -v zsh)" ]]; then
+zsh_path="$(command -v zsh)"
+if [[ "$(getent passwd "$USER" | cut -d: -f7)" != "$zsh_path" ]]; then
   log "Changing shell to zsh..."
-  chsh -s "$(command -v zsh)"
+  chsh -s "$zsh_path" || warn "chsh failed; run: chsh -s $zsh_path"
 fi
 
-log "Done!"
+log "Done! Open a new shell to pick up changes."
