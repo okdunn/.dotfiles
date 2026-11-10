@@ -1,6 +1,9 @@
 [include]
   path = ~/.gitconfig.local
 
+[init]
+  defaultBranch = main
+
 [core]
   pager = delta
 
@@ -11,8 +14,20 @@
   navigate = true
   side-by-side = true
 
+[pull]
+  rebase = true
+
+[push]
+  autoSetupRemote = true
+
+[fetch]
+  prune = true
+
+[rerere]
+  enabled = true
+
 [merge]
-  conflictstyle = diff3
+  conflictstyle = zdiff3
 
 [diff]
   colorMoved = default
