@@ -3,7 +3,14 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
-export PATH="$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
+export GOPATH="$HOME/go"
+export PATH="$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH:$GOPATH/bin:/snap/bin"
+
+# mise must activate before anything that uses tools it installs (atuin, eza, zoxide...)
+(( $+commands[mise] )) && eval "$(mise activate zsh)"
+
+# Completion
+autoload -Uz compinit && compinit -C
 
 # Antidote — rebuild bundle only when .zsh_plugins.txt changes
 source "${ZDOTDIR:-$HOME}/.antidote/antidote.zsh"
@@ -22,19 +29,20 @@ alias vim="nvim"
 vi() { (( $# )) && nvim "$@" || nvim }
 alias lg="lazygit"
 alias lzd="lazydocker"
+# Debian ships these under different names
+(( $+commands[fd] ))  || { (( $+commands[fdfind] )) && alias fd="fdfind" }
+(( $+commands[bat] )) || { (( $+commands[batcat] )) && alias bat="batcat" }
 
 bindkey -v
-bindkey -s ^f "zp\n"
+bindkey -s ^f "tp\n"
 
-. "$HOME/.atuin/bin/env"
+(( $+commands[atuin] ))   && eval "$(atuin init zsh)"
+# thefuck is unmaintained and crashes on Python >= 3.12; stay silent if broken
+(( $+commands[thefuck] )) && eval "$(thefuck --alias 2>/dev/null)"
 
-eval "$(atuin init zsh)"
-command -v thefuck &>/dev/null && eval "$(thefuck --alias)"
-
+# Per-host overrides (untracked)
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
-eval $(thefuck --alias)
-
 # zoxide must stay last: it warns if anything runs after its init
-eval "$(zoxide init zsh)"
+(( $+commands[zoxide] )) && eval "$(zoxide init zsh)"
