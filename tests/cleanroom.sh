@@ -19,6 +19,8 @@ chown -R tester: /home/tester/.dotfiles
 
 sudo -u tester -H env GITHUB_TOKEN="${GITHUB_TOKEN:-}" bash -euo pipefail -c '
   cd ~/.dotfiles
+  # Pre-existing Claude Code settings must survive the merge
+  mkdir -p ~/.claude && echo "{\"theme\": \"light\"}" > ~/.claude/settings.json
   bash install.sh "$@" </dev/null
 
   echo "=== second run (idempotency) ==="
@@ -39,5 +41,8 @@ sudo -u tester -H env GITHUB_TOKEN="${GITHUB_TOKEN:-}" bash -euo pipefail -c '
   tmux show -gv status-right | grep -q continuum_save || { echo "FAIL: tmux-continuum autosave not hooked"; exit 1; }
   tmux kill-server
   bat --list-themes | grep -q "Catppuccin Mocha OLED" || { echo "FAIL: bat theme missing"; exit 1; }
+  [ -L ~/.claude/CLAUDE.md ] || { echo "FAIL: ~/.claude/CLAUDE.md not linked"; exit 1; }
+  jq -e ".theme == \"light\" and .attribution.commit == \"\" and .attribution.sessionUrl == false" ~/.claude/settings.json >/dev/null \
+    || { echo "FAIL: Claude settings merge"; cat ~/.claude/settings.json; exit 1; }
   echo "ALL CHECKS PASSED"
 ' _ "$@"
