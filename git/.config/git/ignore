@@ -1,0 +1,8 @@
+# Global gitignore (core.excludesFile) — personal/tool files that never belong in a repo
+**/.claude/settings.local.json
+.envrc.local
+.env.local
+*.swp
+*~
+.DS_Store
+.ruby-lsp/

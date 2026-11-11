@@ -19,10 +19,12 @@ fzf    = "latest"
 eza    = "latest"
 zoxide = "latest"
 atuin  = "latest"
+vivid  = "latest"
 "github:iffse/pay-respects" = "latest"
 
 # system & data
 btop       = "latest"
 dust       = "latest"
+tealdeer   = "latest"
 jq         = "latest"
 shellcheck = "latest"

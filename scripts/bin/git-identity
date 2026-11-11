@@ -43,3 +43,17 @@ done
 git config --file "$local_cfg" user.name "$name"
 git config --file "$local_cfg" user.email "$email"
 echo "Saved: $name <$email>"
+
+# Optional: sign commits with the SSH key (create one with init-key.sh).
+# Remember to add the key on GitHub as a *signing* key too.
+pubkey="$HOME/.ssh/id_ed25519.pub"
+if [[ -r "$pubkey" && "$(git config --file "$local_cfg" --get commit.gpgsign 2>/dev/null)" != "true" ]]; then
+  read -rp "Sign commits with $pubkey? [y/N]: " sign
+  if [[ "$sign" == [yY]* ]]; then
+    git config --file "$local_cfg" gpg.format ssh
+    git config --file "$local_cfg" user.signingkey "$pubkey"
+    git config --file "$local_cfg" commit.gpgsign true
+    git config --file "$local_cfg" tag.gpgsign true
+    echo "Commit signing on. Turn it off with: git config --file $local_cfg commit.gpgsign false"
+  fi
+fi

@@ -21,28 +21,31 @@ sudo -u tester -H env GITHUB_TOKEN="${GITHUB_TOKEN:-}" bash -euo pipefail -c '
   cd ~/.dotfiles
   # Pre-existing Claude Code settings must survive the merge
   mkdir -p ~/.claude && echo "{\"theme\": \"light\"}" > ~/.claude/settings.json
+  # Identity is normally prompted for; preset it so the non-interactive run is complete
+  git config --file ~/.gitconfig.local user.name "CI Tester"
+  git config --file ~/.gitconfig.local user.email "ci@example.com"
   bash install.sh "$@" </dev/null
 
   echo "=== second run (idempotency) ==="
-  bash install.sh --stow-only "$@" </dev/null
+  bash install.sh --stow-only </dev/null  # no extras: must reuse the saved profile
   if [ -d ~/.dotfiles-backup ]; then
     echo "FAIL: re-run backed up files:"; find ~/.dotfiles-backup -type f; exit 1
   fi
 
-  echo "=== checks ==="
-  # Interactive zsh under a pty, the way a real login uses it
-  out=$(script -qc "zsh -i -c '\''for t in mise nvim tmux fzf fd bat atuin zoxide eza delta jq btop dust pay-respects claude; do whence -p \$t >/dev/null || echo MISSING:\$t; done; echo ZSH_OK'\''" /dev/null 2>&1 | tr -d "\r")
-  echo "$out" | tail -20
-  echo "$out" | grep -q "^ZSH_OK" || { echo "FAIL: zsh did not start cleanly"; exit 1; }
-  if echo "$out" | grep -qE "MISSING:|Traceback|command not found"; then echo "FAIL: zsh startup problems"; exit 1; fi
+  echo "=== saved profile ==="
+  # The second run above passed no extras, so it must have reused the first runs flags
+  for flag in "$@"; do
+    case "$flag" in --desktop | --langs) grep -qx -- "$flag" ~/.config/dotfiles/profile || { echo "FAIL: $flag not saved to profile"; exit 1; } ;; esac
+  done
+  case " $* " in *" --langs "*) [ -L ~/.config/mise/conf.d/langs.toml ] || { echo "FAIL: mise-langs unlinked by flagless rerun"; exit 1; } ;; esac
 
+  echo "=== checks ==="
   eval "$(~/.local/bin/mise activate bash --shims)"
+  jq -e ".theme == \"light\"" ~/.claude/settings.json >/dev/null \
+    || { echo "FAIL: pre-existing Claude setting lost in merge"; cat ~/.claude/settings.json; exit 1; }
+  # dot doctor checks the running tmux server; start one so the plugin check runs
   tmux -f ~/.tmux.conf new-session -d -s ci && sleep 2
-  tmux show -gv status-right | grep -q continuum_save || { echo "FAIL: tmux-continuum autosave not hooked"; exit 1; }
+  ~/bin/dot doctor
   tmux kill-server
-  bat --list-themes | grep -q "Catppuccin Mocha OLED" || { echo "FAIL: bat theme missing"; exit 1; }
-  [ -L ~/.claude/CLAUDE.md ] || { echo "FAIL: ~/.claude/CLAUDE.md not linked"; exit 1; }
-  jq -e ".theme == \"light\" and .attribution.commit == \"\" and .attribution.sessionUrl == false" ~/.claude/settings.json >/dev/null \
-    || { echo "FAIL: Claude settings merge"; cat ~/.claude/settings.json; exit 1; }
   echo "ALL CHECKS PASSED"
 ' _ "$@"

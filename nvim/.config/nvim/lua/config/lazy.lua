@@ -30,7 +30,9 @@ local function get_mise_langs()
           in_tools = false
         elseif in_tools then
           local lang = line:match("^(%w+)%s*=")
-          if lang then langs[lang] = true end
+          if lang then
+            langs[lang] = true
+          end
         end
       end
       f:close()

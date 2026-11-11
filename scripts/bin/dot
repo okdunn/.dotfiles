@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# dot — manage these dotfiles
+#   dot update   pull the repo, relink, and update tools and plugins
+#   dot doctor   check that this machine is set up correctly
+#   dot check    lint the repo (local CI; add --cleanroom for the Docker install test)
+#   dot edit     open the repo in $EDITOR
+#   dot dir      print the repo path (cd "$(dot dir)")
+set -euo pipefail
+
+# Resolve the repo through the stow symlink (~/bin/dot -> repo/scripts/bin/dot)
+DOTFILES_DIR="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/../.." && pwd)"
+# shellcheck source=install/common.sh
+source "$DOTFILES_DIR/install/common.sh"
+# shellcheck source=install/checks.sh
+source "$DOTFILES_DIR/install/checks.sh"
+
+export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
+
+usage() { sed -n '2,7s/^# \{0,1\}//p' "${BASH_SOURCE[0]}"; }
+
+# Run one update step; a failure warns and moves on so one broken tool doesn't block the rest
+step() {
+  local desc="$1"
+  shift
+  log "$desc"
+  "$@" || warn "$desc failed"
+}
+
+cmd_update() {
+  if [[ -n "$(git -C "$DOTFILES_DIR" status --porcelain)" ]]; then
+    warn "Repo has uncommitted changes; they are stashed for the pull and restored after"
+  fi
+  step "Pulling dotfiles" git -C "$DOTFILES_DIR" pull --rebase --autostash
+  # --stow-only reuses the saved --desktop/--langs profile
+  step "Relinking" bash "$DOTFILES_DIR/install.sh" --stow-only
+  if require_cmd mise; then
+    step "Updating mise" mise self-update --yes
+    step "Upgrading mise tools" mise upgrade --yes
+  fi
+  [[ -r "$HOME/.antidote/antidote.zsh" ]] &&
+    step "Updating zsh plugins" zsh -c 'source ~/.antidote/antidote.zsh && antidote update'
+  [[ -x "$HOME/.tmux/plugins/tpm/bin/update_plugins" ]] &&
+    step "Updating tmux plugins" "$HOME/.tmux/plugins/tpm/bin/update_plugins" all
+  # sync = update plugins and write the new versions to lazy-lock.json (commit it if you keep them)
+  require_cmd nvim && step "Updating Neovim plugins" nvim --headless "+Lazy! sync" +qa
+  require_cmd tldr && step "Updating tldr pages" tldr --update
+  if [[ -n "$(git -C "$DOTFILES_DIR" status --porcelain -- nvim/.config/nvim/lazy-lock.json)" ]]; then
+    log "lazy-lock.json changed; review with: git -C $DOTFILES_DIR diff nvim/.config/nvim/lazy-lock.json"
+  fi
+  log "Done. Open a new shell to pick up changes."
+}
+
+case "${1:-}" in
+  update) cmd_update ;;
+  doctor) run_checks ;;
+  check) shift; exec bash "$DOTFILES_DIR/tests/check.sh" "$@" ;;
+  edit) cd "$DOTFILES_DIR" && exec "${EDITOR:-nvim}" . ;;
+  dir) echo "$DOTFILES_DIR" ;;
+  -h | --help | help | "") usage ;;
+  *) echo "Unknown command: $1" >&2; usage >&2; exit 1 ;;
+esac

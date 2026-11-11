@@ -2,8 +2,8 @@
 # shellcheck disable=SC2034  # variables are read by tmux-powerline after sourcing
 
 base="#000000"
-surface0="#1a1a1a"
-surface1="#262626"
+surface0="#313244"
+surface1="#45475a"
 overlay1="#7f849c"
 text="#cdd6f4"
 lavender="#b4befe"

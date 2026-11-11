@@ -1,9 +1,19 @@
 #!/usr/bin/env bash
-# Usage: debian.sh [--stow-only] [--desktop] [--langs]
-#   --stow-only  only (re)link dotfiles; skip apt and tool installs
-#   --desktop    also install the Nerd Font and stow wezterm (skip on headless servers)
-#   --langs      also install language toolchains (go, rust, java, dotnet, ruby, lua)
 set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage: install.sh [--stow-only] [--desktop] [--langs] [--reset]
+  --stow-only  only (re)link dotfiles; skip apt and tool installs
+  --desktop    also install the Nerd Font and stow wezterm (skip on headless servers)
+  --langs      also install language toolchains (go, rust, java, dotnet, ruby, lua)
+  --reset      forget the saved --desktop/--langs choice and use the base install
+  -h, --help   show this help
+
+--desktop/--langs are saved to ~/.config/dotfiles/profile and reused when a later
+run (or `dot update`) passes neither of them.
+EOF
+}
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=install/common.sh
@@ -12,14 +22,31 @@ source "$SCRIPT_DIR/common.sh"
 STOW_ONLY=false
 DESKTOP=false
 LANGS=false
+RESET=false
+EXTRAS=()
 for arg in "$@"; do
   case "$arg" in
     --stow-only) STOW_ONLY=true ;;
-    --desktop)   DESKTOP=true ;;
-    --langs)     LANGS=true ;;
-    *) echo "Unknown option: $arg" >&2; exit 1 ;;
+    --desktop)   EXTRAS+=(--desktop) ;;
+    --langs)     EXTRAS+=(--langs) ;;
+    --reset)     RESET=true ;;
+    -h | --help) usage; exit 0 ;;
+    *) echo "Unknown option: $arg" >&2; usage >&2; exit 1 ;;
   esac
 done
+
+# Explicit extras replace the saved profile; none given means reuse it (unless --reset)
+if ((${#EXTRAS[@]} == 0)) && ! $RESET; then
+  mapfile -t EXTRAS < <(load_profile)
+  ((${#EXTRAS[@]} == 0)) || log "Using saved profile: ${EXTRAS[*]}"
+fi
+for extra in "${EXTRAS[@]}"; do
+  case "$extra" in
+    --desktop) DESKTOP=true ;;
+    --langs)   LANGS=true ;;
+  esac
+done
+save_profile "${EXTRAS[@]}"
 
 # Tools installed below (mise, claude) land in ~/.local/bin; mise-managed tools
 # (jq, nvim...) resolve via shims once installed, including on --stow-only runs
@@ -28,7 +55,7 @@ export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
 APT_PACKAGES=(
   build-essential curl git wget unzip stow
   zsh ripgrep fd-find bat
-  chafa tealdeer htop ncdu
+  chafa htop ncdu
 )
 $DESKTOP && APT_PACKAGES+=(fontconfig)
 
@@ -79,9 +106,11 @@ if [[ "$STOW_ONLY" != "true" ]]; then
   $DESKTOP && install_nerd_font
 fi
 
-EXTRA_PACKAGES=()
-$DESKTOP && EXTRA_PACKAGES+=(wezterm)
-$LANGS && EXTRA_PACKAGES+=(mise-langs)
+
+EXTRA_PACKAGES=() UNUSED_PACKAGES=()
+if $DESKTOP; then EXTRA_PACKAGES+=(wezterm); else UNUSED_PACKAGES+=(wezterm); fi
+if $LANGS; then EXTRA_PACKAGES+=(mise-langs); else UNUSED_PACKAGES+=(mise-langs); fi
+unstow_packages "${UNUSED_PACKAGES[@]}"
 stow_packages "${EXTRA_PACKAGES[@]}"
 
 # Register the custom bat theme (delta reads it from bat's cache too)
@@ -92,6 +121,8 @@ fi
 # Ask for git name/email when missing (also on --stow-only); rerun any time with `git-identity`
 "$DOTFILES_DIR/scripts/bin/git-identity" --if-missing
 
+set_btop_theme
+
 if $STOW_ONLY; then
   merge_claude_settings
   log "Done (stow only)."
@@ -101,6 +132,12 @@ fi
 log "Running mise install..."
 mise install
 eval "$(mise activate bash --shims)"
+
+# tealdeer ships without a page cache, so `tldr` fails until it's fetched once
+if ! tldr tar >/dev/null 2>&1; then
+  log "Fetching tldr pages..."
+  tldr --update >/dev/null || warn "tldr --update failed; run it manually"
+fi
 merge_claude_settings
 
 if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then

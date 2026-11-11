@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Usage: install.sh [--stow-only] [--desktop]
+# Usage: install.sh [--stow-only] [--desktop] [--langs] [--reset]  (see --help)
 set -euo pipefail
 
 DIR="$(cd "$(dirname "$0")" && pwd)"

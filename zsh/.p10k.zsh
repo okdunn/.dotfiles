@@ -145,7 +145,7 @@
   if [[ $POWERLEVEL9K_MULTILINE_FIRST_PROMPT_GAP_CHAR != ' ' ]]; then
     # The color of the filler. You'll probably want to match the color of POWERLEVEL9K_MULTILINE
     # ornaments defined above.
-    typeset -g POWERLEVEL9K_MULTILINE_FIRST_PROMPT_GAP_FOREGROUND='#262626'
+    typeset -g POWERLEVEL9K_MULTILINE_FIRST_PROMPT_GAP_FOREGROUND='#45475a'
     # Start filler from the edge of the screen if there are no left segments on the first line.
     typeset -g POWERLEVEL9K_EMPTY_LINE_LEFT_PROMPT_FIRST_SEGMENT_END_SYMBOL='%{%}'
     # End filler on the edge of the screen if there are no right segments on the first line.
@@ -175,7 +175,7 @@
   typeset -g POWERLEVEL9K_EMPTY_LINE_LEFT_PROMPT_LAST_SEGMENT_END_SYMBOL=
 
   # Catppuccin Mocha: single dark background for all segments
-  typeset -g POWERLEVEL9K_BACKGROUND='#1a1a1a'
+  typeset -g POWERLEVEL9K_BACKGROUND='#313244'
 
   #################################[ os_icon: os identifier ]##################################
   # OS identifier color.
@@ -208,7 +208,7 @@
 
   ##################################[ dir: current directory ]##################################
   # Current directory background color.
-  typeset -g POWERLEVEL9K_DIR_BACKGROUND='#262626'
+  typeset -g POWERLEVEL9K_DIR_BACKGROUND='#45475a'
   # Default current directory foreground color.
   typeset -g POWERLEVEL9K_DIR_FOREGROUND='#b4befe'
   # If directory is too long, shorten some of its segments to the shortest possible unique
