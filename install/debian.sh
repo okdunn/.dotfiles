@@ -1,18 +1,22 @@
 #!/usr/bin/env bash
-# Usage: debian.sh [--stow-only] [--desktop]
+# Usage: debian.sh [--stow-only] [--desktop] [--langs]
 #   --stow-only  only (re)link dotfiles; skip apt and tool installs
 #   --desktop    also install the Nerd Font and stow wezterm (skip on headless servers)
+#   --langs      also install language toolchains (go, rust, java, dotnet, ruby, lua)
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=install/common.sh
 source "$SCRIPT_DIR/common.sh"
 
 STOW_ONLY=false
 DESKTOP=false
+LANGS=false
 for arg in "$@"; do
   case "$arg" in
     --stow-only) STOW_ONLY=true ;;
     --desktop)   DESKTOP=true ;;
+    --langs)     LANGS=true ;;
     *) echo "Unknown option: $arg" >&2; exit 1 ;;
   esac
 done
@@ -23,7 +27,7 @@ export PATH="$HOME/.local/bin:$PATH"
 APT_PACKAGES=(
   build-essential curl git wget unzip stow
   zsh ripgrep fd-find bat
-  chafa tealdeer
+  chafa tealdeer htop ncdu
 )
 $DESKTOP && APT_PACKAGES+=(fontconfig)
 
@@ -74,7 +78,15 @@ if [[ "$STOW_ONLY" != "true" ]]; then
   $DESKTOP && install_nerd_font
 fi
 
-if $DESKTOP; then stow_packages wezterm; else stow_packages; fi
+EXTRA_PACKAGES=()
+$DESKTOP && EXTRA_PACKAGES+=(wezterm)
+$LANGS && EXTRA_PACKAGES+=(mise-langs)
+stow_packages "${EXTRA_PACKAGES[@]}"
+
+# Register the custom bat theme (delta reads it from bat's cache too)
+if require_cmd batcat || require_cmd bat; then
+  "$(command -v bat || command -v batcat)" cache --build >/dev/null || warn "bat cache build failed"
+fi
 
 if $STOW_ONLY; then
   log "Done (stow only)."

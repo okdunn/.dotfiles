@@ -14,23 +14,28 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
+-- Collect tool names from the [tools] tables of the global mise config and conf.d/*.toml
 local function get_mise_langs()
-  local config_path = vim.fn.expand("~/.config/mise/config.toml")
-  local f = io.open(config_path, "r")
-  if not f then return {} end
-  local in_tools = false
+  local files = { vim.fn.expand("~/.config/mise/config.toml") }
+  vim.list_extend(files, vim.fn.glob(vim.fn.expand("~/.config/mise/conf.d") .. "/*.toml", false, true))
   local langs = {}
-  for line in f:lines() do
-    if line:match("^%[tools%]") then
-      in_tools = true
-    elseif line:match("^%[") then
-      in_tools = false
-    elseif in_tools then
-      local lang = line:match("^(%w+)%s*=")
-      if lang then langs[lang] = true end
+  for _, path in ipairs(files) do
+    local f = io.open(path, "r")
+    if f then
+      local in_tools = false
+      for line in f:lines() do
+        if line:match("^%[tools%]") then
+          in_tools = true
+        elseif line:match("^%[") then
+          in_tools = false
+        elseif in_tools then
+          local lang = line:match("^(%w+)%s*=")
+          if lang then langs[lang] = true end
+        end
+      end
+      f:close()
     end
   end
-  f:close()
   return langs
 end
 
@@ -61,7 +66,7 @@ require("lazy").setup({
     lazy = false,
     version = false,
   },
-  install = { colorscheme = { "tokyonight", "habamax" } },
+  install = { colorscheme = { "catppuccin-mocha", "habamax" } },
   checker = {
     enabled = true,
     notify = false,

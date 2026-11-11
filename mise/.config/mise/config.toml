@@ -1,30 +1,28 @@
+# Core tools: installed on every machine.
+# Heavier language toolchains live in the opt-in `mise-langs` package (install.sh --langs).
 [tools]
-# languages
-node   = ["lts", "latest"]
-go     = "latest"
-rust   = ["stable", "nightly"]
+# runtimes many editor tools (LSPs, formatters) need
+node   = "lts"
 python = "latest"
-java   = ["lts", "latest"]
-dotnet = ["8", "9"]
-ruby   = "latest"
-lua    = "latest"
+uv     = "latest"
 
 # editors & git
 neovim     = "latest"
 lazygit    = "latest"
 lazydocker = "latest"
+delta      = "latest"
+gh         = "latest"
 
-# cli tools
-uv     = "latest"
+# shell & terminal
+tmux   = "latest"
+fzf    = "latest"
 eza    = "latest"
 zoxide = "latest"
 atuin  = "latest"
-delta  = "latest"
-gh     = "latest"
-fzf    = "latest"
-tmux   = "latest"
+"github:iffse/pay-respects" = "latest"
 
-[settings]
-
-[settings.ruby]
-compile = false
+# system & data
+btop       = "latest"
+dust       = "latest"
+jq         = "latest"
+shellcheck = "latest"

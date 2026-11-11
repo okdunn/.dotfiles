@@ -10,7 +10,7 @@ if [[ -e "$key" ]]; then
   exit 1
 fi
 
-mkdir -p -m 700 "$HOME/.ssh"
+mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
 read -rp "Enter email for SSH key: " email
 
 ssh-keygen -t ed25519 -C "$email" -f "$key"

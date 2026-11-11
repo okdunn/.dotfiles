@@ -1,0 +1,12 @@
+# Opt-in language toolchains (install.sh --langs). Neovim enables matching
+# LazyVim language extras automatically for anything listed here.
+[tools]
+go     = "latest"
+rust   = "stable"
+java   = "lts"
+dotnet = "10"
+ruby   = "latest"
+lua    = "latest"
+
+[settings.ruby]
+compile = false
