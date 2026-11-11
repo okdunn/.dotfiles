@@ -13,7 +13,7 @@ warn() { echo -e "${YELLOW}==> WARN:${NC} $1" >&2; }
 require_cmd() { command -v "$1" &>/dev/null; }
 
 # Base packages stowed on every machine
-PACKAGES=(bat git lazygit mise nvim scripts ssh tmux zsh)
+PACKAGES=(bat claude git lazygit mise nvim scripts ssh tmux zsh)
 
 # Keep only packages that exist in the repo, so a missing dir warns instead of aborting stow
 existing_packages() {
@@ -64,4 +64,31 @@ stow_packages() {
   # --no-folding: link files, never whole dirs, so packages can share dirs (mise + mise-langs)
   # and apps writing new files into e.g. ~/.config/mise never land them in the repo
   stow --no-folding --restow --dir="$DOTFILES_DIR" --target="$HOME" "${pkgs[@]}"
+}
+
+# Merge the tracked Claude Code settings (install/claude-settings.json) into
+# ~/.claude/settings.json. Not stowed: Claude Code rewrites that file itself
+# (plugins, /config), so only these keys are enforced; everything else is kept.
+merge_claude_settings() {
+  local src="$DOTFILES_DIR/install/claude-settings.json"
+  local dst="$HOME/.claude/settings.json"
+  if ! require_cmd jq; then
+    warn "jq not found; skipping Claude Code settings merge"
+    return 0
+  fi
+  mkdir -p "$HOME/.claude"
+  [[ -s "$dst" ]] || echo '{}' > "$dst"
+  local tmp
+  tmp="$(mktemp)"
+  if jq -s '.[0] * .[1]' "$dst" "$src" > "$tmp"; then
+    if cmp -s "$tmp" "$dst"; then
+      rm -f "$tmp"
+    else
+      log "Merging Claude Code settings into $dst"
+      cat "$tmp" > "$dst" && rm -f "$tmp"
+    fi
+  else
+    rm -f "$tmp"
+    warn "Could not merge Claude Code settings (is $dst valid JSON?)"
+  fi
 }

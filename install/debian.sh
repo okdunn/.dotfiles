@@ -21,8 +21,9 @@ for arg in "$@"; do
   esac
 done
 
-# Tools installed below (mise, claude) land here
-export PATH="$HOME/.local/bin:$PATH"
+# Tools installed below (mise, claude) land in ~/.local/bin; mise-managed tools
+# (jq, nvim...) resolve via shims once installed, including on --stow-only runs
+export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
 
 APT_PACKAGES=(
   build-essential curl git wget unzip stow
@@ -88,22 +89,19 @@ if require_cmd batcat || require_cmd bat; then
   "$(command -v bat || command -v batcat)" cache --build >/dev/null || warn "bat cache build failed"
 fi
 
+# Ask for git name/email when missing (also on --stow-only); rerun any time with `git-identity`
+"$DOTFILES_DIR/scripts/bin/git-identity" --if-missing
+
 if $STOW_ONLY; then
+  merge_claude_settings
   log "Done (stow only)."
   exit 0
-fi
-
-if [[ ! -f "$HOME/.gitconfig.local" && -t 0 ]]; then
-  log "Creating ~/.gitconfig.local (git identity for this machine)..."
-  read -rp "  git user.name:  " git_name
-  read -rp "  git user.email: " git_email
-  git config --file "$HOME/.gitconfig.local" user.name "$git_name"
-  git config --file "$HOME/.gitconfig.local" user.email "$git_email"
 fi
 
 log "Running mise install..."
 mise install
 eval "$(mise activate bash --shims)"
+merge_claude_settings
 
 if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
   log "Installing tmux plugin manager..."
