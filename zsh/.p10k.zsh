@@ -145,7 +145,7 @@
   if [[ $POWERLEVEL9K_MULTILINE_FIRST_PROMPT_GAP_CHAR != ' ' ]]; then
     # The color of the filler. You'll probably want to match the color of POWERLEVEL9K_MULTILINE
     # ornaments defined above.
-    typeset -g POWERLEVEL9K_MULTILINE_FIRST_PROMPT_GAP_FOREGROUND='#45475a'
+    typeset -g POWERLEVEL9K_MULTILINE_FIRST_PROMPT_GAP_FOREGROUND='#262626'
     # Start filler from the edge of the screen if there are no left segments on the first line.
     typeset -g POWERLEVEL9K_EMPTY_LINE_LEFT_PROMPT_FIRST_SEGMENT_END_SYMBOL='%{%}'
     # End filler on the edge of the screen if there are no right segments on the first line.
@@ -175,7 +175,7 @@
   typeset -g POWERLEVEL9K_EMPTY_LINE_LEFT_PROMPT_LAST_SEGMENT_END_SYMBOL=
 
   # Catppuccin Mocha: single dark background for all segments
-  typeset -g POWERLEVEL9K_BACKGROUND='#313244'
+  typeset -g POWERLEVEL9K_BACKGROUND='#1a1a1a'
 
   #################################[ os_icon: os identifier ]##################################
   # OS identifier color.
@@ -208,7 +208,7 @@
 
   ##################################[ dir: current directory ]##################################
   # Current directory background color.
-  typeset -g POWERLEVEL9K_DIR_BACKGROUND='#45475a'
+  typeset -g POWERLEVEL9K_DIR_BACKGROUND='#262626'
   # Default current directory foreground color.
   typeset -g POWERLEVEL9K_DIR_FOREGROUND='#b4befe'
   # If directory is too long, shorten some of its segments to the shortest possible unique
@@ -804,7 +804,7 @@
 
   ###########[ vi_mode: vi mode (you don't need this if you've enabled prompt_char) ]###########
   # Foreground color.
-  typeset -g POWERLEVEL9K_VI_MODE_FOREGROUND='#1e1e2e'
+  typeset -g POWERLEVEL9K_VI_MODE_FOREGROUND='#000000'
   # Text and color for normal (a.k.a. command) vi mode.
   typeset -g POWERLEVEL9K_VI_COMMAND_MODE_STRING=NORMAL
   # Text and color for visual vi mode.
@@ -1278,7 +1278,7 @@
   # You can define different colors, icons and content expansions for different classes:
   #
   #   typeset -g POWERLEVEL9K_TERRAFORM_TEST_FOREGROUND='#a6e3a1'
-  #   typeset -g POWERLEVEL9K_TERRAFORM_TEST_BACKGROUND='#1e1e2e'
+  #   typeset -g POWERLEVEL9K_TERRAFORM_TEST_BACKGROUND='#000000'
   #   typeset -g POWERLEVEL9K_TERRAFORM_TEST_VISUAL_IDENTIFIER_EXPANSION='⭐'
   #   typeset -g POWERLEVEL9K_TERRAFORM_TEST_CONTENT_EXPANSION='> ${P9K_CONTENT} <'
   typeset -g POWERLEVEL9K_TERRAFORM_CLASSES=(
@@ -1325,7 +1325,7 @@
   #
   # You can define different colors, icons and content expansions for different classes:
   #
-  #   typeset -g POWERLEVEL9K_KUBECONTEXT_TEST_FOREGROUND='#1e1e2e'
+  #   typeset -g POWERLEVEL9K_KUBECONTEXT_TEST_FOREGROUND='#000000'
   #   typeset -g POWERLEVEL9K_KUBECONTEXT_TEST_BACKGROUND='#a6e3a1'
   #   typeset -g POWERLEVEL9K_KUBECONTEXT_TEST_VISUAL_IDENTIFIER_EXPANSION='⭐'
   #   typeset -g POWERLEVEL9K_KUBECONTEXT_TEST_CONTENT_EXPANSION='> ${P9K_CONTENT} <'
@@ -1458,7 +1458,7 @@
   # You can define different colors, icons and content expansions for different classes:
   #
   #   typeset -g POWERLEVEL9K_AZURE_TEST_FOREGROUND='#a6e3a1'
-  #   typeset -g POWERLEVEL9K_AZURE_TEST_BACKGROUND='#1e1e2e'
+  #   typeset -g POWERLEVEL9K_AZURE_TEST_BACKGROUND='#000000'
   #   typeset -g POWERLEVEL9K_AZURE_TEST_VISUAL_IDENTIFIER_EXPANSION='⭐'
   #   typeset -g POWERLEVEL9K_AZURE_TEST_CONTENT_EXPANSION='> ${P9K_CONTENT} <'
   typeset -g POWERLEVEL9K_AZURE_CLASSES=(

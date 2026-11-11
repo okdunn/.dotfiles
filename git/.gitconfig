@@ -13,6 +13,22 @@
 [delta]
   navigate = true
   side-by-side = true
+  dark = true
+  # custom theme from ~/.config/bat/themes (needs `bat cache --build`)
+  syntax-theme = Catppuccin Mocha OLED
+  # OLED: dim red/green tints on black instead of delta's bright defaults
+  minus-style = syntax "#2a0e14"
+  minus-emph-style = syntax "#5a1e2b"
+  plus-style = syntax "#0d2614"
+  plus-emph-style = syntax "#1d5230"
+  line-numbers-minus-style = "#f38ba8"
+  line-numbers-plus-style = "#a6e3a1"
+  line-numbers-zero-style = "#333333"
+  line-numbers-left-style = "#262626"
+  line-numbers-right-style = "#262626"
+  file-style = "#cba6f7" bold
+  hunk-header-style = file line-number syntax
+  hunk-header-decoration-style = "#262626" box
 
 [pull]
   rebase = true
