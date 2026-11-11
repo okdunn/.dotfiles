@@ -4,7 +4,8 @@
 list_projects() {
   # .git as dir (repos) or file (worktrees); prune dirs that only hold vendored/plugin repos
   find "$HOME" -maxdepth 5 \
-    \( -name node_modules -o -name .cache -o -path "$HOME/.tmux" -o -path "$HOME/.local/share/mise" \) -prune -o \
+    \( -name node_modules -o -name .cache -o -path "$HOME/.tmux" -o -path "$HOME/.antidote" \
+       -o -path "$HOME/.local/share/mise" -o -path "$HOME/.local/share/nvim" \) -prune -o \
     -name .git -prune -print 2>/dev/null | sed 's|/\.git$||'
 }
 
@@ -16,7 +17,18 @@ if [[ -z "$PROJECT_PATH" ]]; then
   exit 0
 fi
 
-SESSION_NAME=$(basename "$PROJECT_PATH" | tr '[:upper:]' '[:lower:]' | tr ' .:' '___')
+session_name() { print -r -- "${1:l}" | tr ' .:' '___'; }
+
+# Working directory the session was created with (-c)
+session_path() { tmux display-message -p -t "=$1" '#{session_path}' 2>/dev/null; }
+
+SESSION_NAME=$(session_name "${PROJECT_PATH:t}")
+# Two repos with the same folder name (e.g. ~/work/api and ~/oss/api): if the existing
+# session belongs to another path, use parent_repo instead
+if tmux has-session -t "=$SESSION_NAME" 2>/dev/null &&
+  [[ "$(session_path "$SESSION_NAME")" != "$PROJECT_PATH" ]]; then
+  SESSION_NAME=$(session_name "${PROJECT_PATH:h:t}_${PROJECT_PATH:t}")
+fi
 
 if ! tmux has-session -t "=$SESSION_NAME" 2>/dev/null; then
   tmux new-session -d -s "$SESSION_NAME" -c "$PROJECT_PATH"

@@ -6,6 +6,7 @@
 
 [core]
   pager = delta
+  excludesFile = ~/.config/git/ignore
 
 [interactive]
   diffFilter = delta --color-only
@@ -16,34 +17,82 @@
   dark = true
   # custom theme from ~/.config/bat/themes (needs `bat cache --build`)
   syntax-theme = Catppuccin Mocha OLED
-  # OLED: dim red/green tints on black instead of delta's bright defaults
-  minus-style = syntax "#2a0e14"
-  minus-emph-style = syntax "#5a1e2b"
-  plus-style = syntax "#0d2614"
-  plus-emph-style = syntax "#1d5230"
+  # pastel catppuccin red/green blended over black (15% / 30%)
+  minus-style = syntax "#241519"
+  minus-emph-style = syntax "#492a32"
+  plus-style = syntax "#192218"
+  plus-emph-style = syntax "#324430"
   line-numbers-minus-style = "#f38ba8"
   line-numbers-plus-style = "#a6e3a1"
-  line-numbers-zero-style = "#333333"
-  line-numbers-left-style = "#262626"
-  line-numbers-right-style = "#262626"
+  line-numbers-zero-style = "#585b70"
+  line-numbers-left-style = "#45475a"
+  line-numbers-right-style = "#45475a"
   file-style = "#cba6f7" bold
   hunk-header-style = file line-number syntax
-  hunk-header-decoration-style = "#262626" box
+  hunk-header-decoration-style = "#45475a" box
 
 [pull]
   rebase = true
 
 [push]
   autoSetupRemote = true
+  followTags = true
 
 [fetch]
   prune = true
+  pruneTags = true
+
+[rebase]
+  autoStash = true
+  autoSquash = true
+  updateRefs = true
 
 [rerere]
   enabled = true
+  autoupdate = true
 
 [merge]
   conflictstyle = zdiff3
 
 [diff]
   colorMoved = default
+  algorithm = histogram
+
+[commit]
+  # show the diff below the message while writing it
+  verbose = true
+
+[branch]
+  sort = -committerdate
+
+[tag]
+  sort = version:refname
+
+[column]
+  ui = auto
+
+[help]
+  autocorrect = prompt
+
+[alias]
+  lg = log --graph --format='%C(#cba6f7)%h%C(reset) %s %C(#b4befe)%an%C(reset) %C(#6c7086)%ar%C(reset)%C(auto)%d'
+  fixup = commit --fixup
+  undo = reset --soft HEAD~1
+  amend = commit --amend --no-edit
+  st = status -sb
+
+# Plain git output (when not going through delta) in catppuccin mocha
+[color "status"]
+  added = "#a6e3a1"
+  changed = "#f9e2af"
+  untracked = "#f38ba8"
+  branch = "#cba6f7" bold
+[color "branch"]
+  current = "#cba6f7" bold
+  local = "#b4befe"
+  remote = "#89b4fa"
+[color "decorate"]
+  HEAD = "#cba6f7" bold
+  branch = "#b4befe"
+  remoteBranch = "#89b4fa"
+  tag = "#f9e2af"

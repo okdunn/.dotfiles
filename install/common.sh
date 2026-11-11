@@ -12,8 +12,28 @@ warn() { echo -e "${YELLOW}==> WARN:${NC} $1" >&2; }
 
 require_cmd() { command -v "$1" &>/dev/null; }
 
+# Optional install flags (--desktop, --langs) are remembered here, so plain reruns
+# and `dot update` keep the same extras without retyping them
+PROFILE_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/profile"
+
+load_profile() {
+  if [[ -r "$PROFILE_FILE" ]]; then
+    grep -E '^--(desktop|langs)$' "$PROFILE_FILE" || true
+    return
+  fi
+  # No profile yet (machine installed before profiles existed): infer it from what's linked
+  [[ "$(realpath -q "$HOME/.config/wezterm/wezterm.lua")" == "$DOTFILES_DIR"/* ]] && echo --desktop
+  [[ "$(realpath -q "$HOME/.config/mise/conf.d/langs.toml")" == "$DOTFILES_DIR"/* ]] && echo --langs
+  return 0
+}
+
+save_profile() {
+  mkdir -p "${PROFILE_FILE%/*}"
+  printf '%s\n' "$@" >"$PROFILE_FILE"
+}
+
 # Base packages stowed on every machine
-PACKAGES=(bat claude git lazygit mise nvim scripts ssh tmux zsh)
+PACKAGES=(atuin bat btop claude eza git lazygit mise nvim scripts ssh tmux zsh)
 
 # Keep only packages that exist in the repo, so a missing dir warns instead of aborting stow
 existing_packages() {
@@ -66,6 +86,16 @@ stow_packages() {
   stow --no-folding --restow --dir="$DOTFILES_DIR" --target="$HOME" "${pkgs[@]}"
 }
 
+# Unlink optional packages that are no longer selected (e.g. after --reset). Unstowing
+# a package that was never stowed is a no-op.
+unstow_packages() {
+  local pkg
+  for pkg in "$@"; do
+    [[ -d "$DOTFILES_DIR/$pkg" ]] || continue
+    stow --no-folding --delete --dir="$DOTFILES_DIR" --target="$HOME" "$pkg"
+  done
+}
+
 # Merge the tracked Claude Code settings (install/claude-settings.json) into
 # ~/.claude/settings.json. Not stowed: Claude Code rewrites that file itself
 # (plugins, /config), so only these keys are enforced; everything else is kept.
@@ -91,4 +121,21 @@ merge_claude_settings() {
     rm -f "$tmp"
     warn "Could not merge Claude Code settings (is $dst valid JSON?)"
   fi
+}
+
+# Point btop at the tracked catppuccin OLED theme. btop.conf itself isn't stowed:
+# btop rewrites it on exit, so only these two keys are set and the rest is left alone.
+set_btop_theme() {
+  local conf="$HOME/.config/btop/btop.conf"
+  mkdir -p "${conf%/*}"
+  touch "$conf"
+  local key val
+  for kv in 'color_theme="catppuccin_mocha_oled"' 'theme_background=False'; do
+    key="${kv%%=*}" val="${kv#*=}"
+    if grep -q "^${key} *=" "$conf"; then
+      sed -i "s|^${key} *=.*|${key} = ${val}|" "$conf"
+    else
+      echo "${key} = ${val}" >> "$conf"
+    fi
+  done
 }

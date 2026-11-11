@@ -13,14 +13,14 @@ end)
 local oled = wezterm.color.get_builtin_schemes()["Catppuccin Mocha"]
 oled.background = "#000000"
 oled.cursor_border = "#f5e0dc"
-oled.selection_bg = "#262626"
+oled.selection_bg = "#45475a"
 oled.tab_bar = {
 	background = "#000000",
 	active_tab = { bg_color = "#cba6f7", fg_color = "#000000" },
-	inactive_tab = { bg_color = "#1a1a1a", fg_color = "#7f849c" },
-	inactive_tab_hover = { bg_color = "#262626", fg_color = "#cdd6f4" },
+	inactive_tab = { bg_color = "#313244", fg_color = "#7f849c" },
+	inactive_tab_hover = { bg_color = "#45475a", fg_color = "#cdd6f4" },
 	new_tab = { bg_color = "#000000", fg_color = "#7f849c" },
-	new_tab_hover = { bg_color = "#262626", fg_color = "#cdd6f4" },
+	new_tab_hover = { bg_color = "#45475a", fg_color = "#cdd6f4" },
 }
 config.color_schemes = { ["Catppuccin Mocha OLED"] = oled }
 config.color_scheme = "Catppuccin Mocha OLED"

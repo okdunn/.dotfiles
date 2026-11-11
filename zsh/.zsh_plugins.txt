@@ -3,5 +3,6 @@ zsh-users/zsh-completions kind:fpath path:src
 belak/zsh-utils path:completion
 Aloxaf/fzf-tab
 zsh-users/zsh-autosuggestions
+catppuccin/zsh-syntax-highlighting path:themes/catppuccin_mocha-zsh-syntax-highlighting.zsh
 zsh-users/zsh-syntax-highlighting
 romkatv/powerlevel10k
