@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# git-identity [--if-missing]
+# Set the git user.name / user.email for this machine in ~/.gitconfig.local
+# (included by the tracked ~/.gitconfig, so it never lands in the dotfiles repo).
+# Current values are offered as defaults; press Enter to keep them.
+#   --if-missing  do nothing when both are already set (used by install.sh)
+set -euo pipefail
+
+local_cfg="$HOME/.gitconfig.local"
+current() { git config --global --includes --get "$1" 2>/dev/null || true; }
+
+name="$(current user.name)"
+email="$(current user.email)"
+
+if [[ "${1:-}" == "--if-missing" && -n "$name" && -n "$email" ]]; then
+  exit 0
+fi
+
+if [[ ! -t 0 ]]; then
+  echo "git identity not set; run 'git-identity' in a terminal to set it." >&2
+  exit 0
+fi
+
+echo "Git identity for this machine (saved to $local_cfg)"
+
+while :; do
+  read -rp "  user.name  [${name:-none}]: " input
+  name="${input:-$name}"
+  [[ -n "$name" ]] && break
+  echo "  name can't be empty"
+done
+
+while :; do
+  read -rp "  user.email [${email:-none}]: " input
+  candidate="${input:-$email}"
+  if [[ "$candidate" == *@*.* ]]; then
+    email="$candidate"
+    break
+  fi
+  echo "  enter a valid email address"
+done
+
+git config --file "$local_cfg" user.name "$name"
+git config --file "$local_cfg" user.email "$email"
+echo "Saved: $name <$email>"

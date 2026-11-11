@@ -21,8 +21,14 @@ lazygit, bat/delta and wezterm share one palette (`#000000` base, `#1a1a1a`/`#26
 Handy keys: `Ctrl-F` project picker (`tp`), `Ctrl-T` fuzzy file, `Alt-C` fuzzy cd,
 `Ctrl-R` history (atuin), `Tab` fuzzy completion (fzf-tab), `f` after a failed command (pay-respects).
 
-Per-machine overrides go in untracked `~/.zshrc.local` and `~/.gitconfig.local`
-(the installer prompts for git name/email if the latter is missing).
+Claude Code: `~/.claude/CLAUDE.md` (global instructions) is stowed from `claude/`.
+`~/.claude/settings.json` is *merged*, not linked, because Claude Code rewrites it itself:
+the installer enforces only the keys in `install/claude-settings.json` (no commit/PR attribution)
+and keeps everything else on the machine.
+
+Per-machine overrides go in untracked `~/.zshrc.local` and `~/.gitconfig.local`.
+The installer asks for your git name/email whenever they're missing (on every run,
+including `--stow-only`); run `git-identity` any time to set or change them.
 
 New SSH key: `./init-key.sh`
 
