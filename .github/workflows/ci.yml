@@ -14,7 +14,7 @@ jobs:
       - name: shellcheck
         run: |
           shellcheck --version
-          shellcheck -x install.sh install/*.sh init-key.sh tests/*.sh ssh/.ssh/rc \
+          shellcheck -x install.sh install/*.sh init-key.sh tests/*.sh ssh/.ssh/rc scripts/bin/git-identity \
             tmux/.config/tmux-powerline/config.sh \
             tmux/.config/tmux-powerline/segments/*.sh \
             tmux/.config/tmux-powerline/themes/*.sh
