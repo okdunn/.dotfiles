@@ -106,5 +106,7 @@ for f in ~/.zshrc.d/*.zsh(N); do source "$f"; done; unset f
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
+alias z="cd"
+
 # zoxide must stay last: it warns if anything runs after its init
-(( $+commands[zoxide] )) && eval "$(zoxide init zsh)"
+(( $+commands[zoxide] )) && eval "$(zoxide init zsh --cmd cd)"
