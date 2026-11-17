@@ -102,6 +102,7 @@ run_checks() {
   _check "eza theme linked" test -L "$HOME/.config/eza/theme.yml"
   _check "git global ignore linked" test -L "$HOME/.config/git/ignore"
   _check "atuin config linked" test -L "$HOME/.config/atuin/config.toml"
+  _check "atuin theme linked" test -L "$HOME/.config/atuin/themes/catppuccin-mocha-oled.toml"
   echo "Tool config"
   check_tmux
   _check "bat theme 'Catppuccin Mocha OLED' built" sh -c 'bat --list-themes | grep -q "Catppuccin Mocha OLED"'
