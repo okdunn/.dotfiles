@@ -5,7 +5,7 @@ usage() {
   cat <<'EOF'
 Usage: install.sh [--stow-only] [--desktop] [--langs] [--reset]
   --stow-only  only (re)link dotfiles; skip apt and tool installs
-  --desktop    also install the Nerd Font (skip on headless servers)
+  --desktop    also install the Nerd Font and stow wezterm (skip on headless servers)
   --langs      also install language toolchains (go, rust, java, dotnet, ruby, lua)
   --reset      forget the saved --desktop/--langs choice and use the base install
   -h, --help   show this help
@@ -123,10 +123,7 @@ fi
 
 
 EXTRA_PACKAGES=() UNUSED_PACKAGES=()
-# The wezterm package was removed; drop the link it left on --desktop machines
-wez="$HOME/.config/wezterm/wezterm.lua"
-[[ -L "$wez" && "$(readlink "$wez")" == *"/wezterm/.config/wezterm/wezterm.lua" && ! -e "$wez" ]] && rm "$wez" && rmdir --ignore-fail-on-non-empty "${wez%/*}"
-unset wez
+if $DESKTOP; then EXTRA_PACKAGES+=(wezterm); else UNUSED_PACKAGES+=(wezterm); fi
 if $LANGS; then EXTRA_PACKAGES+=(mise-langs); else UNUSED_PACKAGES+=(mise-langs); fi
 unstow_packages "${UNUSED_PACKAGES[@]}"
 stow_packages "${EXTRA_PACKAGES[@]}"

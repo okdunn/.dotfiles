@@ -1,6 +1,6 @@
 -- Catppuccin Mocha on a true-black (OLED) background: only base/mantle/crust go black,
 -- catppuccin's own surfaces stay for selections, cursor line and popups (pastel highlights).
--- Same palette as tmux, lazygit, fzf, p10k, bat/delta, eza, and btop in these dotfiles.
+-- Same palette as tmux, lazygit, fzf, p10k, bat/delta, eza, btop and wezterm in these dotfiles.
 return {
   {
     "catppuccin/nvim",

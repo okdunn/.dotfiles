@@ -22,6 +22,7 @@ load_profile() {
     return
   fi
   # No profile yet (machine installed before profiles existed): infer it from what's linked
+  [[ "$(realpath -q "$HOME/.config/wezterm/wezterm.lua")" == "$DOTFILES_DIR"/* ]] && echo --desktop
   [[ "$(realpath -q "$HOME/.config/mise/conf.d/langs.toml")" == "$DOTFILES_DIR"/* ]] && echo --langs
   return 0
 }
