@@ -11,7 +11,7 @@ to SSH into Linux servers, so they need just the terminal, its font and its conf
 
 ## Goals / non-goals / anti-goals
 
-- Goal: one pasteable command per Mac/Windows machine installs WezTerm, JetBrains Mono
+- Goal: one pasteable command per Mac/Windows machine installs JetBrains Mono
   Nerd Font and the OLED config. Rerunning it updates the config.
 - Goal: Linux `--desktop` stows the same `wezterm.lua` again (as before `a82274a`).
 - Non-goal: shell, nvim or other tools on Mac/Windows (macOS support stays dropped).
@@ -61,3 +61,9 @@ to SSH into Linux servers, so they need just the terminal, its font and its conf
   `pwsh` only if it's available.
 - Prerequisite outside this change: pushing to `origin` currently fails (SSH access), and
   the Mac/Windows commands only work after a push.
+
+## Change after review (2026-11-17)
+
+The scripts no longer install WezTerm itself: the user judged unattended WezTerm installs too
+unstable. They warn with a wezterm.org link when WezTerm is missing and still install the font and
+config.

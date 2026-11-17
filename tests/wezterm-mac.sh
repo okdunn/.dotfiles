@@ -35,10 +35,11 @@ check() { # check name condition...
 backups() { find "$HOME/.config/wezterm" -name 'wezterm.lua.bak-*' 2>/dev/null | wc -l; }
 
 setup; run "$BREW_PATH"
-check fresh bash -c 'grep -qx "install --cask wezterm" "$1" && grep -qx "install --cask font-jetbrains-mono-nerd-font" "$1" && cmp -s "$2" "$3"' _ "$BREW_LOG" "$CFG" "$REPO_LUA"
+# WezTerm itself is never installed by the script: it points to wezterm.org and carries on
+check fresh bash -c '! grep -q "install --cask wezterm\$" "$1" && grep -qx "install --cask font-jetbrains-mono-nerd-font" "$1" && cmp -s "$2" "$3" && grep -q "wezterm.org" "$4"' _ "$BREW_LOG" "$CFG" "$REPO_LUA" "$SANDBOX/out"
 
 setup; mkdir -p "$WEZTERM_APP"; run "$BREW_PATH"
-check app-present bash -c '! grep -qx "install --cask wezterm" "$1" && grep -qx "install --cask font-jetbrains-mono-nerd-font" "$1"' _ "$BREW_LOG"
+check app-present bash -c '! grep -q "wezterm.org" "$1" && grep -qx "install --cask font-jetbrains-mono-nerd-font" "$2"' _ "$SANDBOX/out" "$BREW_LOG"
 
 setup; export BREW_INSTALLED="wezterm font-jetbrains-mono-nerd-font"; run "$BREW_PATH"
 check installed bash -c '! grep -q "^install" "$1"' _ "$BREW_LOG"
