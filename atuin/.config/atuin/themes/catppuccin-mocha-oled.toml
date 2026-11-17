@@ -1,0 +1,14 @@
+# Catppuccin Mocha, mauve accent. Colours from github.com/catppuccin/atuin (mocha-mauve);
+# atuin draws no background of its own, so it shows the terminal's OLED black.
+[theme]
+name = "catppuccin-mocha-oled"
+
+[colors]
+AlertInfo = "#a6e3a1"
+AlertWarn = "#fab387"
+AlertError = "#f38ba8"
+Annotation = "#cba6f7"
+Base = "#cdd6f4"
+Guidance = "#9399b2"
+Important = "#f38ba8"
+Title = "#cba6f7"
