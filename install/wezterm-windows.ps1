@@ -1,4 +1,5 @@
-# Install WezTerm, JetBrains Mono Nerd Font and the Catppuccin Mocha OLED config on Windows.
+# Install JetBrains Mono Nerd Font and the Catppuccin Mocha OLED WezTerm config on Windows.
+# WezTerm itself must be installed separately (https://wezterm.org).
 # Runs standalone (no clone needed), from PowerShell:
 #   irm https://raw.githubusercontent.com/okdunn/.dotfiles/main/install/wezterm-windows.ps1 | iex
 # Rerun to update the config. A different existing config is backed up first.
@@ -40,9 +41,13 @@
         if ($LASTEXITCODE -notin 0, -1978335189, -1978335135) { throw "winget could not install $name ($id)" }
     }
 
-    # A WezTerm installed without winget (zip, installer from the website) is still on PATH
-    $hasWezterm = (Test-WingetInstalled 'wez.wezterm') -or [bool](Get-Command wezterm -ErrorAction SilentlyContinue)
-    Install-IfMissing 'wez.wezterm' 'WezTerm' $hasWezterm
+    # WezTerm itself isn't installed here (its releases are too unstable to pull in
+    # unattended); the font and config still go in, ready for when it is
+    if ((Test-WingetInstalled 'wez.wezterm') -or (Get-Command wezterm -ErrorAction SilentlyContinue)) {
+        Log 'WezTerm found'
+    } else {
+        Write-Host '==> WARN: WezTerm not found. Install it from https://wezterm.org/install/windows.html; the config below is ready for it.' -ForegroundColor Yellow
+    }
     Install-IfMissing 'DEVCOM.JetBrainsMonoNerdFont' 'JetBrains Mono Nerd Font' (Test-WingetInstalled 'DEVCOM.JetBrainsMonoNerdFont')
 
     # Download first, so a failed fetch never touches the existing config

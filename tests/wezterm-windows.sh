@@ -63,11 +63,12 @@ alive() { grep -qx session-alive "$ROOT/$1.out" && grep -qx EAP=Continue "$ROOT/
 nbak() { find "$ROOT/$1" -name '*.bak-*' | wc -l; }
 
 run fresh
-check fresh bash -c 'cmp -s "$1/fresh/.wezterm.lua" "$2" && grep -q "install -e --id wez.wezterm" "$1/fresh.log" && grep -q "DEVCOM.JetBrainsMonoNerdFont" "$1/fresh.log"' _ "$ROOT" "$REPO_LUA"
+# WezTerm itself is never installed by the script: it points to wezterm.org and carries on
+check fresh bash -c 'cmp -s "$1/fresh/.wezterm.lua" "$2" && ! grep -q "wez.wezterm" "$1/fresh.log" && grep -q "DEVCOM.JetBrainsMonoNerdFont" "$1/fresh.log" && grep -q "wezterm.org" "$1/fresh.out"' _ "$ROOT" "$REPO_LUA"
 alive fresh || { echo "FAIL fresh-session"; failed=1; }
 
 run installed WINGET_INSTALLED="wez.wezterm DEVCOM.JetBrainsMonoNerdFont"
-check installed test ! -s "$ROOT/installed.log"
+check installed bash -c '[[ ! -s $1 ]] && ! grep -q "wezterm.org" "$2"' _ "$ROOT/installed.log" "$ROOT/installed.out"
 
 run already-code WINGET_INSTALL_CODE=-1978335189
 check already-code cmp -s "$ROOT/already-code/.wezterm.lua" "$REPO_LUA"

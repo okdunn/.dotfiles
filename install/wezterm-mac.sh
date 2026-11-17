@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Install WezTerm, JetBrains Mono Nerd Font and the Catppuccin Mocha OLED config on macOS.
+# Install JetBrains Mono Nerd Font and the Catppuccin Mocha OLED WezTerm config on macOS.
+# WezTerm itself must be installed separately (https://wezterm.org).
 # Runs standalone (no clone needed):
 #   curl -fsSL https://raw.githubusercontent.com/okdunn/.dotfiles/main/install/wezterm-mac.sh | bash
 # Rerun to update the config. A different existing config is backed up first.
@@ -22,17 +23,18 @@ main() {
   fi
 
   log() { printf '\033[0;32m==>\033[0m %s\n' "$1"; }
+  warn() { printf '\033[0;33m==> WARN:\033[0m %s\n' "$1" >&2; }
   die() { printf '\033[0;31m==> ERROR:\033[0m %s\n' "$1" >&2; exit 1; }
 
   command -v brew >/dev/null ||
     die "Homebrew not found. Install it from https://brew.sh, then rerun this script."
 
-  # A WezTerm installed from the website isn't known to brew, so check the app too
+  # WezTerm itself isn't installed here (its releases are too unstable to pull in
+  # unattended); the font and config still go in, ready for when it is
   if brew list --cask wezterm >/dev/null 2>&1 || [[ -d "$WEZTERM_APP" ]]; then
-    log "WezTerm already installed"
+    log "WezTerm found"
   else
-    log "Installing WezTerm..."
-    brew install --cask wezterm
+    warn "WezTerm not found. Install it from https://wezterm.org/install/macos.html; the config below is ready for it."
   fi
 
   if brew list --cask font-jetbrains-mono-nerd-font >/dev/null 2>&1; then

@@ -33,7 +33,8 @@ curl -fsSL https://raw.githubusercontent.com/okdunn/.dotfiles/main/install/wezte
 irm https://raw.githubusercontent.com/okdunn/.dotfiles/main/install/wezterm-windows.ps1 | iex
 ```
 
-Each installs WezTerm and JetBrains Mono Nerd Font only if they're missing, then writes the config
+Install WezTerm itself first from [wezterm.org](https://wezterm.org/installation.html); the scripts don't
+install it. Each installs JetBrains Mono Nerd Font if it's missing (and warns if WezTerm is), then writes the config
 to the file WezTerm will load: an existing `$WEZTERM_CONFIG_FILE` or `~/.config/wezterm/wezterm.lua`
 if there is one, otherwise `~/.config/wezterm/wezterm.lua` on macOS and `%USERPROFILE%\.wezterm.lua`
 on Windows. A different
