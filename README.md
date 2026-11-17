@@ -11,7 +11,7 @@ Debian/Ubuntu only. Managed with GNU Stow; tools via apt + [mise](https://mise.j
 Options:
 
 - `--stow-only` — only (re)link dotfiles, skip package/tool installs
-- `--desktop` — also install JetBrains Mono Nerd Font (skip on headless servers)
+- `--desktop` — also install JetBrains Mono Nerd Font and stow the wezterm config (skip on headless servers)
 - `--langs` — also install language toolchains: go, rust, java, dotnet, ruby, lua (`mise-langs` package).
   Neovim turns on the matching LazyVim language extras automatically.
 - `--reset` — forget the saved `--desktop`/`--langs` choice
@@ -34,7 +34,7 @@ Options:
 Theme: Catppuccin Mocha on true black (OLED) everywhere — only the base is `#000000`;
 catppuccin's own surfaces (`#313244`/`#45475a`/`#585b70`) and pastel accents are used for
 selections, cursor lines and highlights. nvim, tmux, p10k, fzf, lazygit, bat/delta, git, eza/ls (vivid),
-zsh syntax highlighting and btop all share it.
+zsh syntax highlighting, btop and wezterm all share it.
 
 Handy keys: `Ctrl-F` project picker (`tp`), `Ctrl-T` fuzzy file, `Alt-C` fuzzy cd,
 `Ctrl-R` history (atuin), `Tab` fuzzy completion (fzf-tab), `f` after a failed command (pay-respects).
