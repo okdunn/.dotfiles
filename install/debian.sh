@@ -48,6 +48,14 @@ for extra in "${EXTRAS[@]}"; do
 done
 save_profile "${EXTRAS[@]}"
 
+# Everything that needs input happens here, so the rest of the run is unattended.
+# Rerun git-identity any time to change name/email.
+require_cmd git && "$DOTFILES_DIR/scripts/bin/git-identity" --if-missing
+if [[ "$STOW_ONLY" != "true" ]]; then
+  log "sudo is needed for apt and to set zsh as your login shell"
+  sudo -v
+fi
+
 # Tools installed below (mise, claude) land in ~/.local/bin; mise-managed tools
 # (jq, nvim...) resolve via shims once installed, including on --stow-only runs
 export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
@@ -76,6 +84,13 @@ if [[ "$STOW_ONLY" != "true" ]]; then
   log "Installing apt packages..."
   sudo apt-get update
   sudo apt-get install -y "${APT_PACKAGES[@]}"
+
+  # Right after apt: zsh exists now and the sudo password is still cached
+  zsh_path="$(command -v zsh)"
+  if [[ "$(getent passwd "$USER" | cut -d: -f7)" != "$zsh_path" ]]; then
+    log "Changing shell to zsh..."
+    sudo chsh -s "$zsh_path" "$USER" || warn "chsh failed; run: chsh -s $zsh_path"
+  fi
 
   # Debian ships fd/bat as fdfind/batcat
   mkdir -p "$HOME/.local/bin"
@@ -118,9 +133,6 @@ if require_cmd batcat || require_cmd bat; then
   "$(command -v bat || command -v batcat)" cache --build >/dev/null || warn "bat cache build failed"
 fi
 
-# Ask for git name/email when missing (also on --stow-only); rerun any time with `git-identity`
-"$DOTFILES_DIR/scripts/bin/git-identity" --if-missing
-
 # Untracked per-project/tool shell config, sourced by .zshrc
 mkdir -p "$HOME/.zshrc.d"
 
@@ -153,11 +165,5 @@ log "Installing tmux plugins..."
 log "Installing Neovim plugins..."
 # restore = install the exact versions pinned in lazy-lock.json
 nvim --headless "+Lazy! restore" +qa || warn "Neovim plugin install failed; run :Lazy restore manually"
-
-zsh_path="$(command -v zsh)"
-if [[ "$(getent passwd "$USER" | cut -d: -f7)" != "$zsh_path" ]]; then
-  log "Changing shell to zsh..."
-  chsh -s "$zsh_path" || warn "chsh failed; run: chsh -s $zsh_path"
-fi
 
 log "Done! Open a new shell to pick up changes."

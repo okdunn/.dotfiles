@@ -7,7 +7,8 @@
 set -euo pipefail
 
 local_cfg="$HOME/.gitconfig.local"
-current() { git config --global --includes --get "$1" 2>/dev/null || true; }
+# Also read the local file directly: on a fresh install ~/.gitconfig (which includes it) isn't linked yet
+current() { git config --global --includes --get "$1" 2>/dev/null || git config --file "$local_cfg" --get "$1" 2>/dev/null || true; }
 
 name="$(current user.name)"
 email="$(current user.email)"
