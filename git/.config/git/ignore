@@ -1,5 +1,6 @@
 # Global gitignore (core.excludesFile) — personal/tool files that never belong in a repo
 **/.claude/settings.local.json
+**/.claude/worktrees/
 .envrc.local
 .env.local
 *.swp
