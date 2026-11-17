@@ -53,6 +53,9 @@ the installer enforces only the keys in `install/claude-settings.json` (no commi
 and keeps everything else on the machine.
 
 Per-machine overrides go in untracked `~/.zshrc.local` and `~/.gitconfig.local`.
+Per-project/tool shell config (PATHs, env vars) goes in untracked `~/.zshrc.d/<name>.zsh`,
+one file each (the installer creates the folder). `~/.zshrc` is a link into this repo, so an
+installer that appends to it is editing the repo: `dot doctor` warns, and the lines belong in `~/.zshrc.d/`.
 The installer asks for your git name/email whenever they're missing (on every run,
 including `--stow-only`); run `git-identity` any time to set or change them.
 

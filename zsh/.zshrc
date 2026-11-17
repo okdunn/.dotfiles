@@ -100,7 +100,9 @@ fi
 # pay-respects: type `f` after a failed command to fix it
 (( $+commands[pay-respects] )) && eval "$(pay-respects zsh --alias f)"
 
-# Per-host overrides (untracked)
+# Per-host overrides (untracked): one file per project/tool in ~/.zshrc.d/, plus ~/.zshrc.local.
+# Installers that append to ~/.zshrc edit this repo; move their lines into ~/.zshrc.d/.
+for f in ~/.zshrc.d/*.zsh(N); do source "$f"; done; unset f
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
