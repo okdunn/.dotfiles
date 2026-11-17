@@ -14,6 +14,7 @@ setup() {
   SANDBOX=$(mktemp -d)
   export HOME="$SANDBOX/home" BREW_LOG="$SANDBOX/brew.log" BREW_INSTALLED=""
   export WEZTERM_LUA_URL="file://$REPO_LUA" WEZTERM_APP="$SANDBOX/no-such.app"
+  unset XDG_CONFIG_HOME WEZTERM_CONFIG_FILE
   mkdir -p "$HOME" "$SANDBOX/bin"
   : >"$BREW_LOG"
   cat >"$SANDBOX/bin/brew" <<'EOF'
@@ -58,5 +59,21 @@ fi
 setup; mkdir -p "${CFG%/*}"; echo "-- mine" >"$CFG"; export WEZTERM_LUA_URL="file:///nonexistent/wezterm.lua"
 run "$BREW_PATH" && status=0 || status=$?
 check bad-url bash -c '[[ $1 != 0 ]] && grep -qx -- "-- mine" "$2" && [[ $(find "${2%/*}" -name "wezterm.lua.bak-*" | wc -l) == 0 ]]' _ "$status" "$CFG"
+
+# WezTerm reads $WEZTERM_CONFIG_FILE, then an existing $XDG_CONFIG_HOME/wezterm/wezterm.lua,
+# before ~/.config/...; the script must write the file WezTerm will actually load
+setup; export WEZTERM_CONFIG_FILE="$SANDBOX/custom/my.lua"; run "$BREW_PATH"
+check env-config-file bash -c 'cmp -s "$1" "$2" && [[ ! -e $3 ]]' _ "$WEZTERM_CONFIG_FILE" "$REPO_LUA" "$CFG"
+
+setup; export XDG_CONFIG_HOME="$SANDBOX/xdg"; mkdir -p "$XDG_CONFIG_HOME/wezterm"; echo "-- xdg" >"$XDG_CONFIG_HOME/wezterm/wezterm.lua"; run "$BREW_PATH"
+check xdg-existing bash -c 'cmp -s "$1/wezterm/wezterm.lua" "$2" && [[ ! -e $3 ]]' _ "$XDG_CONFIG_HOME" "$REPO_LUA" "$CFG"
+
+# curl | bash runs input as it arrives: a download cut off after the backup but before the
+# install must run nothing
+setup; mkdir -p "${CFG%/*}"; echo "-- mine" >"$CFG"
+cut=$(($(grep -nF 'mv "$tmp" "$CONFIG"' "$SCRIPT" | cut -d: -f1) - 1))
+[[ $cut -gt 0 ]] || { echo "FAIL truncated (install line not found)"; failed=1; }
+head -n "$cut" "$SCRIPT" | PATH="$BREW_PATH" bash >"$SANDBOX/out" 2>&1
+check truncated bash -c 'grep -qx -- "-- mine" "$1"' _ "$CFG"
 
 exit "$failed"

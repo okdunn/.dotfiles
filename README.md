@@ -34,7 +34,9 @@ irm https://raw.githubusercontent.com/okdunn/.dotfiles/main/install/wezterm-wind
 ```
 
 Each installs WezTerm and JetBrains Mono Nerd Font only if they're missing, then writes the config
-(`~/.config/wezterm/wezterm.lua` on macOS, `%USERPROFILE%\.wezterm.lua` on Windows). A different
+to the file WezTerm will load: an existing `$WEZTERM_CONFIG_FILE` or `~/.config/wezterm/wezterm.lua`
+if there is one, otherwise `~/.config/wezterm/wezterm.lua` on macOS and `%USERPROFILE%\.wezterm.lua`
+on Windows. A different
 existing config is backed up to `*.bak-<timestamp>` first. Rerun to pick up config changes. The
 scripts fetch from GitHub, so push changes to `wezterm.lua` before rerunning them.
 

@@ -62,6 +62,8 @@ tool stylua --check nvim/.config/nvim || fail stylua
 
 step "wezterm mac installer tests"
 bash tests/wezterm-mac.sh || fail "wezterm-mac tests"
+step "wezterm windows installer tests (skipped without pwsh)"
+bash tests/wezterm-windows.sh || fail "wezterm-windows tests"
 
 if [[ "${1:-}" == "--cleanroom" ]]; then
   for image in ubuntu:24.04 debian:12; do

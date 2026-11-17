@@ -10,8 +10,14 @@
     $url = if ($env:WEZTERM_LUA_URL) { $env:WEZTERM_LUA_URL } else {
         'https://raw.githubusercontent.com/okdunn/.dotfiles/main/wezterm/.config/wezterm/wezterm.lua'
     }
-    # WezTerm's documented Windows location; it is read when no XDG config exists
-    $config = Join-Path $HOME '.wezterm.lua'
+    # The file WezTerm will actually load: $WEZTERM_CONFIG_FILE, then an existing XDG or
+    # ~/.config/wezterm/wezterm.lua, then %USERPROFILE%\.wezterm.lua (the documented default)
+    $xdgConfig = if ($env:XDG_CONFIG_HOME) { Join-Path $env:XDG_CONFIG_HOME 'wezterm\wezterm.lua' }
+    $dotConfig = Join-Path $HOME '.config\wezterm\wezterm.lua'
+    $config = if ($env:WEZTERM_CONFIG_FILE) { $env:WEZTERM_CONFIG_FILE }
+        elseif ($xdgConfig -and (Test-Path $xdgConfig)) { $xdgConfig }
+        elseif (Test-Path $dotConfig) { $dotConfig }
+        else { Join-Path $HOME '.wezterm.lua' }
 
     function Log($msg) { Write-Host "==> $msg" -ForegroundColor Green }
 
@@ -29,7 +35,9 @@
         if ($present) { Log "$name already installed"; return }
         Log "Installing $name..."
         winget install -e --id $id --accept-package-agreements --accept-source-agreements
-        if ($LASTEXITCODE -ne 0) { throw "winget could not install $name ($id)" }
+        # winget list can miss a package that install then finds already there; those
+        # exit codes (0x8A15002B no applicable upgrade, 0x8A150061 already installed) are fine
+        if ($LASTEXITCODE -notin 0, -1978335189, -1978335135) { throw "winget could not install $name ($id)" }
     }
 
     # A WezTerm installed without winget (zip, installer from the website) is still on PATH
@@ -57,6 +65,7 @@
         Move-Item $config $backup
         Log "Backed up your existing config to $backup"
     }
+    New-Item -ItemType Directory -Force -Path (Split-Path $config) | Out-Null
     Move-Item $tmp $config
     Log "WezTerm config installed at $config. Restart WezTerm to apply it."
 }
