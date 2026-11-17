@@ -60,6 +60,9 @@ step "stylua --check"
 # nvim only: wezterm.lua uses tabs and has no stylua config of its own
 tool stylua --check nvim/.config/nvim || fail stylua
 
+step "wezterm mac installer tests"
+bash tests/wezterm-mac.sh || fail "wezterm-mac tests"
+
 if [[ "${1:-}" == "--cleanroom" ]]; then
   for image in ubuntu:24.04 debian:12; do
     step "clean-room install on $image"
