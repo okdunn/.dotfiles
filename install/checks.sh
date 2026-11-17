@@ -72,6 +72,16 @@ check_tmux() {
   fi
 }
 
+# Installers that append to ~/.zshrc are editing the repo through the stow link.
+# Warn only: a mid-edit or cleanroom copy of the repo must not fail doctor.
+check_zshrc_clean() {
+  if git -C "$DOTFILES_DIR" diff --quiet HEAD -- zsh/.zshrc 2>/dev/null; then
+    _ok "zsh/.zshrc unchanged"
+  else
+    echo -e "  ${YELLOW}!${NC} zsh/.zshrc has uncommitted changes — move machine/project lines to ~/.zshrc.d/<name>.zsh"
+  fi
+}
+
 check_claude_settings() {
   jq -e '.attribution.commit == "" and .attribution.pr == "" and .attribution.sessionUrl == false' \
     "$HOME/.claude/settings.json"
@@ -87,6 +97,7 @@ run_checks() {
   check_zsh_startup
   echo "Links"
   check_stow
+  check_zshrc_clean
   _check "~/.claude/CLAUDE.md linked" test -L "$HOME/.claude/CLAUDE.md"
   _check "eza theme linked" test -L "$HOME/.config/eza/theme.yml"
   _check "git global ignore linked" test -L "$HOME/.config/git/ignore"
