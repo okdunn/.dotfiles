@@ -121,6 +121,9 @@ fi
 # Ask for git name/email when missing (also on --stow-only); rerun any time with `git-identity`
 "$DOTFILES_DIR/scripts/bin/git-identity" --if-missing
 
+# Untracked per-project/tool shell config, sourced by .zshrc
+mkdir -p "$HOME/.zshrc.d"
+
 set_btop_theme
 
 if $STOW_ONLY; then
