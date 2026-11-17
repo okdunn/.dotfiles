@@ -57,7 +57,7 @@ else
 fi
 
 step "stylua --check"
-# nvim only: wezterm.lua uses tabs and has no stylua config of its own
+# nvim is the only Lua config with a stylua.toml
 tool stylua --check nvim/.config/nvim || fail stylua
 
 if [[ "${1:-}" == "--cleanroom" ]]; then

@@ -21,7 +21,6 @@ expected_packages() {
   mapfile -t extras < <(load_profile)
   for extra in "${extras[@]}"; do
     case "$extra" in
-      --desktop) echo wezterm ;;
       --langs)   echo mise-langs ;;
     esac
   done
