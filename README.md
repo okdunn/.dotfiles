@@ -19,6 +19,25 @@ Options:
 `--desktop`/`--langs` are saved to `~/.config/dotfiles/profile`; later runs that pass neither
 (including `--stow-only` and `dot update`) reuse them. Passing either replaces the saved set.
 
+### Mac/Windows WezTerm install
+
+The same WezTerm config (Catppuccin Mocha on OLED black) for macOS and Windows, no clone needed:
+
+```
+# macOS (needs Homebrew)
+curl -fsSL https://raw.githubusercontent.com/okdunn/.dotfiles/main/install/wezterm-mac.sh | bash
+```
+
+```
+# Windows (PowerShell, needs winget)
+irm https://raw.githubusercontent.com/okdunn/.dotfiles/main/install/wezterm-windows.ps1 | iex
+```
+
+Each installs WezTerm and JetBrains Mono Nerd Font only if they're missing, then writes the config
+(`~/.config/wezterm/wezterm.lua` on macOS, `%USERPROFILE%\.wezterm.lua` on Windows). A different
+existing config is backed up to `*.bak-<timestamp>` first. Rerun to pick up config changes. The
+scripts fetch from GitHub, so push changes to `wezterm.lua` before rerunning them.
+
 ## Day to day: `dot`
 
 - `dot update` — pull the repo, relink, `mise self-update` + `mise upgrade`, update antidote,
@@ -34,7 +53,7 @@ Options:
 Theme: Catppuccin Mocha on true black (OLED) everywhere — only the base is `#000000`;
 catppuccin's own surfaces (`#313244`/`#45475a`/`#585b70`) and pastel accents are used for
 selections, cursor lines and highlights. nvim, tmux, p10k, fzf, lazygit, bat/delta, git, eza/ls (vivid),
-zsh syntax highlighting, btop and wezterm all share it.
+zsh syntax highlighting, btop, atuin and wezterm all share it.
 
 Handy keys: `Ctrl-F` project picker (`tp`), `Ctrl-T` fuzzy file, `Alt-C` fuzzy cd,
 `Ctrl-R` history (atuin), `Tab` fuzzy completion (fzf-tab), `f` after a failed command (pay-respects).
