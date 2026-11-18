@@ -58,6 +58,7 @@ alias vim="nvim"
 alias vi="nvim"
 alias lg="lazygit"
 alias lzd="lazydocker"
+alias ta="tmux attach"
 # Debian ships these under different names
 (( $+commands[fd] ))  || { (( $+commands[fdfind] )) && alias fd="fdfind" }
 (( $+commands[bat] )) || { (( $+commands[batcat] )) && alias bat="batcat" }
