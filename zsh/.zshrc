@@ -60,6 +60,17 @@ alias lg="lazygit"
 alias lzd="lazydocker"
 alias ta="tmux attach"
 alias cld="claude"
+
+# Bare `tmux` names the session after the current dir and reattaches if it exists.
+# tmux rejects `.` and `:` in session names, so swap them out.
+tmux() {
+  if (( $# == 0 )) && [[ -z $TMUX ]]; then
+    local name=${${PWD:t}//[.:]/_}
+    command tmux new-session -A -s "${name:-root}"
+  else
+    command tmux "$@"
+  fi
+}
 # Debian ships these under different names
 (( $+commands[fd] ))  || { (( $+commands[fdfind] )) && alias fd="fdfind" }
 (( $+commands[bat] )) || { (( $+commands[batcat] )) && alias bat="batcat" }
