@@ -36,9 +36,11 @@ Usage: one feature per session, many sessions in parallel.
 
 ## Design
 
-1. **Git identity.** Installer ensures the global aoe `config.toml` has a read-only
-   `extra_volumes` entry mapping `~/.gitconfig.local` to `/root/.gitconfig.local`, when aoe is
-   installed. `dot doctor` checks the entry is present.
+1. **Git identity.** Installer ensures every aoe profile config
+   (`profiles/<name>/config.toml`, `main` if none) has a read-only `extra_volumes` entry mapping
+   `~/.gitconfig.local` to `/root/.gitconfig.local`, when aoe is installed. Not the global
+   `config.toml`: it is stowed from the repo (added on main after this design), and the host path
+   differs per machine. `dot doctor` checks every profile.
 2. **Hook errors.** Installer rewrites any `atuin hook claude-code` command in
    `~/.claude/settings.json` to `command -v atuin >/dev/null && atuin hook claude-code || true`
    (jq, alongside `merge_claude_settings`; the existing `*` merge replaces arrays so can't do it).

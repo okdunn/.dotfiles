@@ -94,23 +94,17 @@ check_atuin_hook() {
 }
 
 check_aoe_mount() {
-  local dir="${AOE_CONFIG%/*}" profile
-  if [[ ! -d "$dir" ]]; then
+  local cfg
+  if [[ ! -d "$AOE_DIR" ]]; then
     echo "  - aoe: not configured, skipped"
     return
   fi
-  if ! grep -qF "$AOE_GITCONFIG_MOUNT" "$AOE_CONFIG" 2>/dev/null; then
-    _fail "aoe mounts ~/.gitconfig.local" "run install.sh --stow-only"
-    return
-  fi
-  # A profile's extra_volumes replaces the global list instead of adding to it
-  for profile in "$dir"/profiles/*/config.toml; do
-    [[ -f "$profile" ]] || continue
-    if grep -qE '^[[:space:]]*extra_volumes[[:space:]]*=' "$profile" && ! grep -qF "$AOE_GITCONFIG_MOUNT" "$profile"; then
-      _fail "aoe mounts ~/.gitconfig.local" "add \"$AOE_GITCONFIG_MOUNT\" to extra_volumes in $profile"
+  while IFS= read -r cfg; do
+    if ! grep -qF "$AOE_GITCONFIG_MOUNT" "$cfg" 2>/dev/null; then
+      _fail "aoe mounts ~/.gitconfig.local" "missing in $cfg; run install.sh --stow-only"
       return
     fi
-  done
+  done < <(aoe_profile_configs)
   _ok "aoe mounts ~/.gitconfig.local"
   # The signing key path is a host path the sandbox can't see, so signed commits fail there
   if [[ "$(git config --file "$HOME/.gitconfig.local" --get commit.gpgsign 2>/dev/null)" == true ]]; then

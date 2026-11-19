@@ -75,9 +75,11 @@ the installer enforces only the keys in `install/claude-settings.json` (no commi
 and keeps everything else on the machine.
 It also guards atuin's Claude hook (`command -v atuin && ...`) so Agent of Empires sandboxes,
 which share that file but don't have atuin, don't error on every Bash call, and adds a read-only
-`~/.gitconfig.local` mount to aoe's sandbox config (`~/.config/agent-of-empires/config.toml`) so
-sandboxed sessions commit as you. `CLAUDE.md` tells agents in an aoe session to rename the session branch
-to `<type>/<slug>` before their first commit. Commit signing doesn't work inside sandboxes (the key
+`~/.gitconfig.local` mount to each aoe profile's untracked config
+(`~/.config/agent-of-empires/profiles/<name>/config.toml`) so sandboxed sessions commit as you.
+A profile's `extra_volumes` replaces the global one, so put extra mounts there too.
+`CLAUDE.md` tells agents in an aoe session to rename the session branch to `<type>/<slug>`
+before their first commit. Commit signing doesn't work inside sandboxes (the key
 is a host path); `dot doctor` warns when it's on.
 
 Agent of Empires (`aoe`): a TUI that runs Claude Code sessions in parallel, each in its own

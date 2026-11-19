@@ -150,40 +150,63 @@ guard_atuin_hook() {
 }
 
 # aoe mounts ~/.gitconfig into sandboxes but not the ~/.gitconfig.local it includes, which
-# holds the git identity
-AOE_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/agent-of-empires/config.toml"
+# holds the git identity. The mount goes in each profile's config: the global config.toml is
+# stowed from the repo, the host path differs per machine, and a profile's extra_volumes
+# replaces the global list anyway.
+AOE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/agent-of-empires"
 AOE_GITCONFIG_MOUNT="$HOME/.gitconfig.local:/root/.gitconfig.local:ro"
 
+# Profile config files; `main` is the profile aoe bootstraps on first run
+aoe_profile_configs() {
+  local dir found=false
+  for dir in "$AOE_DIR"/profiles/*/; do
+    [[ -d "$dir" ]] || continue
+    echo "${dir}config.toml"
+    found=true
+  done
+  $found || echo "$AOE_DIR/profiles/main/config.toml"
+}
+
 ensure_aoe_gitconfig_mount() {
-  local line="extra_volumes = [\"$AOE_GITCONFIG_MOUNT\"]" tmp
-  [[ -d "${AOE_CONFIG%/*}" ]] || return 0
-  grep -qF "$AOE_GITCONFIG_MOUNT" "$AOE_CONFIG" 2>/dev/null && return 0
+  local cfg
+  [[ -d "$AOE_DIR" ]] || return 0
   if [[ ! -f "$HOME/.gitconfig.local" ]]; then
     # Docker would create a root-owned directory in its place
     warn "No ~/.gitconfig.local yet; run git-identity, then rerun install.sh --stow-only for aoe sandboxes"
     return 0
   fi
+  while IFS= read -r cfg; do
+    add_aoe_mount "$cfg"
+  done < <(aoe_profile_configs)
+}
+
+add_aoe_mount() {
+  local cfg="$1" line="extra_volumes = [\"$AOE_GITCONFIG_MOUNT\"]" tmp prog
+  grep -qF "$AOE_GITCONFIG_MOUNT" "$cfg" 2>/dev/null && return 0
+  # aoe refuses to start when its app dir is group-writable
+  [[ -d "${cfg%/*}" ]] || install -d -m 700 "${cfg%/*/*}" "${cfg%/*}"
   # Regexes stay literal in the awk programs: gawk strips the backslash from "\[" in -v values
   local empty='^[[:space:]]*extra_volumes[[:space:]]*=[[:space:]]*\[[[:space:]]*\][[:space:]]*$'
   local header='^[[:space:]]*\[sandbox\][[:space:]]*(#.*)?$'
-  local prog
   # aoe writes `extra_volumes = []` when it saves its settings
-  if grep -qE "$empty" "$AOE_CONFIG" 2>/dev/null; then
+  if grep -qE "$empty" "$cfg" 2>/dev/null; then
     prog='/^[[:space:]]*extra_volumes[[:space:]]*=[[:space:]]*\[[[:space:]]*\][[:space:]]*$/ { print l; next } { print }'
-  elif grep -qE '^[[:space:]]*extra_volumes[[:space:]]*=' "$AOE_CONFIG" 2>/dev/null; then
-    warn "Add \"$AOE_GITCONFIG_MOUNT\" to sandbox.extra_volumes in $AOE_CONFIG so aoe sandboxes get your git identity"
+  elif grep -qE '^[[:space:]]*extra_volumes[[:space:]]*=' "$cfg" 2>/dev/null; then
+    warn "Add \"$AOE_GITCONFIG_MOUNT\" to sandbox.extra_volumes in $cfg so aoe sandboxes get your git identity"
     return 0
-  elif grep -qE "$header" "$AOE_CONFIG" 2>/dev/null; then
+  elif grep -qE "$header" "$cfg" 2>/dev/null; then
     prog='{ print } /^[[:space:]]*\[sandbox\][[:space:]]*(#.*)?$/ { print l }'
   fi
   if [[ -n "${prog:-}" ]]; then
     tmp="$(mktemp)"
-    awk -v l="$line" "$prog" "$AOE_CONFIG" >"$tmp" && cat "$tmp" >"$AOE_CONFIG"
+    awk -v l="$line" "$prog" "$cfg" >"$tmp" && cat "$tmp" >"$cfg"
     rm -f "$tmp"
+  elif [[ -s "$cfg" ]]; then
+    printf '\n[sandbox]\n%s\n' "$line" >>"$cfg"
   else
-    printf '\n[sandbox]\n%s\n' "$line" >>"$AOE_CONFIG"
+    printf '[sandbox]\n%s\n' "$line" >"$cfg"
   fi
-  log "Mounted ~/.gitconfig.local into aoe sandboxes ($AOE_CONFIG)"
+  log "Mounted ~/.gitconfig.local into aoe sandboxes ($cfg)"
 }
 
 setup_claude() {

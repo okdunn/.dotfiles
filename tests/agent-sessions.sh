@@ -16,6 +16,7 @@ setup() {
   SETTINGS="$HOME/.claude/settings.json"
   AOE_DIR="$HOME/.config/agent-of-empires"
   AOE_TOML="$AOE_DIR/config.toml"
+  PROF="$AOE_DIR/profiles/main/config.toml"
   MOUNT="$HOME/.gitconfig.local:/root/.gitconfig.local:ro"
 }
 # run "<shell code>": source the installer libs, then run it; output lands in $SANDBOX/out
@@ -53,36 +54,43 @@ setup; echo 'not json' >"$SETTINGS"; run guard_atuin_hook
 check atuin-bad-json bash -c '[[ "$(cat "$1")" == "not json" ]] && grep -q WARN "$2"' _ "$SETTINGS" "$SANDBOX/out"
 
 # --- ensure_aoe_gitconfig_mount -----------------------------------------------------------
+# The mount goes in each aoe profile's config (untracked, per machine): the global config is
+# stowed from the repo, and a profile's extra_volumes replaces the global list anyway.
+
+profile() { mkdir -p "${PROF%/*}"; touch "$HOME/.gitconfig.local"; [[ $# == 0 ]] || printf "%b" "$1" >"$PROF"; }
 
 setup; touch "$HOME/.gitconfig.local"; run ensure_aoe_gitconfig_mount
 check aoe-absent test ! -e "$AOE_DIR"
 
-setup; mkdir -p "$AOE_DIR"; run ensure_aoe_gitconfig_mount
-check aoe-no-local bash -c '[[ ! -s "$1" ]] && grep -q WARN "$2"' _ "$AOE_TOML" "$SANDBOX/out"
+setup; mkdir -p "${PROF%/*}"; run ensure_aoe_gitconfig_mount
+check aoe-no-local bash -c '[[ ! -s "$1" ]] && grep -q WARN "$2"' _ "$PROF" "$SANDBOX/out"
 
 setup; mkdir -p "$AOE_DIR"; touch "$HOME/.gitconfig.local"; run ensure_aoe_gitconfig_mount
-check aoe-new-file bash -c 'grep -qx "\[sandbox\]" "$1" && grep -qxF "extra_volumes = [\"$2\"]" "$1"' _ "$AOE_TOML" "$MOUNT"
+check aoe-bootstrap-main bash -c 'grep -qx "\[sandbox\]" "$1" && grep -qxF "extra_volumes = [\"$2\"]" "$1" &&
+  [[ $(stat -c %a "${1%/*}") == 700 && $(stat -c %a "${1%/*/*}") == 700 ]]' _ "$PROF" "$MOUNT"
 
-setup; mkdir -p "$AOE_DIR"; touch "$HOME/.gitconfig.local"
-printf '[sandbox]\nenabled_by_default = true\n[session]\nx = 1\n' >"$AOE_TOML"; run ensure_aoe_gitconfig_mount
+setup; profile; mkdir -p "$AOE_DIR/profiles/work"; run ensure_aoe_gitconfig_mount
+check aoe-all-profiles bash -c 'grep -qF "$2" "$1" && grep -qF "$2" "${1%/main/*}/work/config.toml"' _ "$PROF" "$MOUNT"
+
+setup; profile; printf '[sandbox]\nextra_volumes = []\n' >"$AOE_TOML"; cp "$AOE_TOML" "$SANDBOX/orig"; run ensure_aoe_gitconfig_mount
+check aoe-global-untouched cmp -s "$AOE_TOML" "$SANDBOX/orig"
+
+setup; profile '[sandbox]\nenabled_by_default = true\n[session]\nx = 1\n'; run ensure_aoe_gitconfig_mount
 check aoe-existing-sandbox bash -c 'sed -n "/^\[sandbox\]/,/^\[session\]/p" "$1" | grep -qF "$2" &&
-  grep -qx "enabled_by_default = true" "$1" && grep -qx "x = 1" "$1"' _ "$AOE_TOML" "$MOUNT"
+  grep -qx "enabled_by_default = true" "$1" && grep -qx "x = 1" "$1"' _ "$PROF" "$MOUNT"
 
-setup; mkdir -p "$AOE_DIR"; touch "$HOME/.gitconfig.local"
-printf '[sandbox]  # mine\nenabled_by_default = true\n' >"$AOE_TOML"; run ensure_aoe_gitconfig_mount
-check aoe-header-comment bash -c '[[ $(grep -c "^\\[sandbox\\]" "$1") == 1 ]] && sed -n 2p "$1" | grep -qF "$2"' _ "$AOE_TOML" "$MOUNT"
+setup; profile '[sandbox]  # mine\nenabled_by_default = true\n'; run ensure_aoe_gitconfig_mount
+check aoe-header-comment bash -c '[[ $(grep -c "^\\[sandbox\\]" "$1") == 1 ]] && sed -n 2p "$1" | grep -qF "$2"' _ "$PROF" "$MOUNT"
 
-setup; mkdir -p "$AOE_DIR"; touch "$HOME/.gitconfig.local"
-printf '[sandbox]\nextra_volumes = ["/a:/a"]\n' >"$AOE_TOML"; cp "$AOE_TOML" "$SANDBOX/orig"; run ensure_aoe_gitconfig_mount
-check aoe-existing-array bash -c 'cmp -s "$1" "$2" && grep -q WARN "$3" && grep -qF "$4" "$3"' _ "$AOE_TOML" "$SANDBOX/orig" "$SANDBOX/out" "$MOUNT"
+setup; profile '[sandbox]\nextra_volumes = ["/a:/a"]\n'; cp "$PROF" "$SANDBOX/orig"; run ensure_aoe_gitconfig_mount
+check aoe-existing-array bash -c 'cmp -s "$1" "$2" && grep -q WARN "$3" && grep -qF "$4" "$3"' _ "$PROF" "$SANDBOX/orig" "$SANDBOX/out" "$MOUNT"
 
-setup; mkdir -p "$AOE_DIR"; touch "$HOME/.gitconfig.local"; run ensure_aoe_gitconfig_mount; run ensure_aoe_gitconfig_mount
-check aoe-idempotent bash -c '[[ $(grep -cF "$2" "$1") == 1 ]]' _ "$AOE_TOML" "$MOUNT"
+setup; profile; run ensure_aoe_gitconfig_mount; run ensure_aoe_gitconfig_mount
+check aoe-idempotent bash -c '[[ $(grep -cF "$2" "$1") == 1 ]]' _ "$PROF" "$MOUNT"
 
-setup; mkdir -p "$AOE_DIR"; touch "$HOME/.gitconfig.local"
-printf '[sandbox]\nextra_volumes = []\n[session]\nx = 1\n' >"$AOE_TOML"; run ensure_aoe_gitconfig_mount
+setup; profile '[sandbox]\nextra_volumes = []\n[session]\nx = 1\n'; run ensure_aoe_gitconfig_mount
 check aoe-empty-array bash -c 'grep -qxF "extra_volumes = [\"$2\"]" "$1" && [[ $(grep -c extra_volumes "$1") == 1 ]] &&
-  grep -qx "x = 1" "$1"' _ "$AOE_TOML" "$MOUNT"
+  grep -qx "x = 1" "$1"' _ "$PROF" "$MOUNT"
 
 # --- dot doctor checks --------------------------------------------------------------------
 
@@ -94,22 +102,21 @@ setup; settings_with "$UNGUARDED"
 check doctor-atuin-bad not run check_atuin_hook
 
 doctor_aoe() { run 'check_aoe_mount; echo "fails=$_fail_count oks=$_ok_count"'; }
+mounted() { mkdir -p "${1%/*}"; printf '[sandbox]\nextra_volumes = ["%s"]\n' "$MOUNT" >"$1"; }
 
 setup; doctor_aoe
 check doctor-aoe-skip bash -c 'grep -q skipped "$1" && grep -q "fails=0" "$1"' _ "$SANDBOX/out"
 
-setup; mkdir -p "$AOE_DIR"; printf '[sandbox]\nextra_volumes = ["%s"]\n' "$MOUNT" >"$AOE_TOML"; doctor_aoe
+setup; mounted "$PROF"; doctor_aoe
 check doctor-aoe-ok bash -c 'grep -q "fails=0 oks=1" "$1"' _ "$SANDBOX/out"
 
-setup; mkdir -p "$AOE_DIR"; echo '[sandbox]' >"$AOE_TOML"; doctor_aoe
-check doctor-aoe-missing bash -c 'grep -q "fails=1" "$1"' _ "$SANDBOX/out"
+setup; mkdir -p "$AOE_DIR"; doctor_aoe
+check doctor-aoe-no-profiles bash -c 'grep -q "fails=1" "$1"' _ "$SANDBOX/out"
 
-setup; mkdir -p "$AOE_DIR/profiles/main"; printf '[sandbox]\nextra_volumes = ["%s"]\n' "$MOUNT" >"$AOE_TOML"
-printf '[sandbox]\nextra_volumes = ["/x:/x"]\n' >"$AOE_DIR/profiles/main/config.toml"; doctor_aoe
-check doctor-aoe-profile bash -c 'grep -q "fails=1" "$1" && grep -q "profiles/main/config.toml" "$1"' _ "$SANDBOX/out"
+setup; mounted "$PROF"; mkdir -p "$AOE_DIR/profiles/work"; echo '[sandbox]' >"$AOE_DIR/profiles/work/config.toml"; doctor_aoe
+check doctor-aoe-missing bash -c 'grep -q "fails=1" "$1" && grep -q "profiles/work/config.toml" "$1"' _ "$SANDBOX/out"
 
-setup; mkdir -p "$AOE_DIR"; printf '[sandbox]\nextra_volumes = ["%s"]\n' "$MOUNT" >"$AOE_TOML"
-printf '[commit]\n\tgpgsign = true\n' >"$HOME/.gitconfig.local"; doctor_aoe
+setup; mounted "$PROF"; printf '[commit]\n\tgpgsign = true\n' >"$HOME/.gitconfig.local"; doctor_aoe
 check doctor-aoe-signing bash -c 'grep -q "fails=0 oks=1" "$1" && grep -qi "sign" "$1"' _ "$SANDBOX/out"
 
 exit "$failed"
