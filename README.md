@@ -73,6 +73,11 @@ Claude Code: `~/.claude/CLAUDE.md` (global instructions) is stowed from `claude/
 `~/.claude/settings.json` is *merged*, not linked, because Claude Code rewrites it itself:
 the installer enforces only the keys in `install/claude-settings.json` (no commit/PR attribution)
 and keeps everything else on the machine.
+It also guards atuin's Claude hook (`command -v atuin && ...`) so Agent of Empires sandboxes,
+which share that file but don't have atuin, don't error on every Bash call, and adds a read-only
+`~/.gitconfig.local` mount to aoe's sandbox config (`~/.config/agent-of-empires/config.toml`) so
+sandboxed sessions commit as you. `CLAUDE.md` tells agents to rename an aoe session branch to
+`<type>/<slug>` before their first commit.
 
 Agent of Empires (`aoe`): a TUI that runs Claude Code sessions in parallel, each in its own
 tmux session (optionally its own git worktree), with status detection and a diff viewer.
