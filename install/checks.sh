@@ -87,6 +87,33 @@ check_claude_settings() {
     "$HOME/.claude/settings.json"
 }
 
+# atuin may put the unguarded hook back when it updates
+check_atuin_hook() {
+  jq -e --arg u "$ATUIN_HOOK_UNGUARDED" '[.. | .command? // empty] | index($u) == null' \
+    "$HOME/.claude/settings.json"
+}
+
+check_aoe_mount() {
+  local dir="${AOE_CONFIG%/*}" profile
+  if [[ ! -d "$dir" ]]; then
+    echo "  - aoe: not configured, skipped"
+    return
+  fi
+  if ! grep -qF "$AOE_GITCONFIG_MOUNT" "$AOE_CONFIG" 2>/dev/null; then
+    _fail "aoe mounts ~/.gitconfig.local" "run install.sh --stow-only"
+    return
+  fi
+  # A profile's extra_volumes replaces the global list instead of adding to it
+  for profile in "$dir"/profiles/*/config.toml; do
+    [[ -f "$profile" ]] || continue
+    if grep -qE '^[[:space:]]*extra_volumes[[:space:]]*=' "$profile" && ! grep -qF "$AOE_GITCONFIG_MOUNT" "$profile"; then
+      _fail "aoe mounts ~/.gitconfig.local" "add \"$AOE_GITCONFIG_MOUNT\" to extra_volumes in $profile"
+      return
+    fi
+  done
+  _ok "aoe mounts ~/.gitconfig.local"
+}
+
 check_tldr() {
   tldr git | grep -qi git
 }
@@ -108,6 +135,8 @@ run_checks() {
   _check "bat theme 'Catppuccin Mocha OLED' built" sh -c 'bat --list-themes | grep -q "Catppuccin Mocha OLED"'
   _check "btop theme set" grep -q '^color_theme = "catppuccin_mocha_oled"' "$HOME/.config/btop/btop.conf"
   _check "Claude Code settings merged" check_claude_settings
+  _check "atuin Claude hook guarded (run install.sh --stow-only)" check_atuin_hook
+  check_aoe_mount
   _check "git identity set" sh -c 'git config --global --includes user.name && git config --global --includes user.email'
   _check "tldr pages cached" check_tldr
 

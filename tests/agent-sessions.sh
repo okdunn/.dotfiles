@@ -79,4 +79,28 @@ check aoe-existing-array bash -c 'cmp -s "$1" "$2" && grep -q WARN "$3" && grep 
 setup; mkdir -p "$AOE_DIR"; touch "$HOME/.gitconfig.local"; run ensure_aoe_gitconfig_mount; run ensure_aoe_gitconfig_mount
 check aoe-idempotent bash -c '[[ $(grep -cF "$2" "$1") == 1 ]]' _ "$AOE_TOML" "$MOUNT"
 
+# --- dot doctor checks --------------------------------------------------------------------
+
+# shellcheck disable=SC2317  # called through check
+not() { ! "$@"; }
+setup; settings_with "$GUARDED"
+check doctor-atuin-ok run check_atuin_hook
+setup; settings_with "$UNGUARDED"
+check doctor-atuin-bad not run check_atuin_hook
+
+doctor_aoe() { run 'check_aoe_mount; echo "fails=$_fail_count oks=$_ok_count"'; }
+
+setup; doctor_aoe
+check doctor-aoe-skip bash -c 'grep -q skipped "$1" && grep -q "fails=0" "$1"' _ "$SANDBOX/out"
+
+setup; mkdir -p "$AOE_DIR"; printf '[sandbox]\nextra_volumes = ["%s"]\n' "$MOUNT" >"$AOE_TOML"; doctor_aoe
+check doctor-aoe-ok bash -c 'grep -q "fails=0 oks=1" "$1"' _ "$SANDBOX/out"
+
+setup; mkdir -p "$AOE_DIR"; echo '[sandbox]' >"$AOE_TOML"; doctor_aoe
+check doctor-aoe-missing bash -c 'grep -q "fails=1" "$1"' _ "$SANDBOX/out"
+
+setup; mkdir -p "$AOE_DIR/profiles/main"; printf '[sandbox]\nextra_volumes = ["%s"]\n' "$MOUNT" >"$AOE_TOML"
+printf '[sandbox]\nextra_volumes = ["/x:/x"]\n' >"$AOE_DIR/profiles/main/config.toml"; doctor_aoe
+check doctor-aoe-profile bash -c 'grep -q "fails=1" "$1" && grep -q "profiles/main/config.toml" "$1"' _ "$SANDBOX/out"
+
 exit "$failed"
