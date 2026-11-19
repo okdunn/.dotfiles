@@ -70,6 +70,8 @@ automatically), `git amend`, `git undo` (uncommit, keep changes). Global ignores
 `~/.config/git/ignore`. `git-identity` also offers SSH commit signing when `~/.ssh/id_ed25519.pub` exists.
 
 Claude Code: `~/.claude/CLAUDE.md` (global instructions) is stowed from `claude/`.
+Tracked skills in `claude/.claude/skills/` are linked file by file, so other skills in
+`~/.claude/skills` stay local to the machine.
 `~/.claude/settings.json` is *merged*, not linked, because Claude Code rewrites it itself:
 the installer enforces only the keys in `install/claude-settings.json` (no commit/PR attribution)
 and keeps everything else on the machine.

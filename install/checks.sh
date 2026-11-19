@@ -99,6 +99,7 @@ run_checks() {
   check_stow
   check_zshrc_clean
   _check "~/.claude/CLAUDE.md linked" test -L "$HOME/.claude/CLAUDE.md"
+  _check "implement skill linked" test -L "$HOME/.claude/skills/implement/SKILL.md"
   _check "eza theme linked" test -L "$HOME/.config/eza/theme.yml"
   _check "git global ignore linked" test -L "$HOME/.config/git/ignore"
   _check "atuin config linked" test -L "$HOME/.config/atuin/config.toml"
