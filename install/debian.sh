@@ -139,7 +139,7 @@ mkdir -p "$HOME/.zshrc.d"
 set_btop_theme
 
 if $STOW_ONLY; then
-  merge_claude_settings
+  setup_claude
   log "Done (stow only)."
   exit 0
 fi
@@ -153,7 +153,7 @@ if ! tldr tar >/dev/null 2>&1; then
   log "Fetching tldr pages..."
   tldr --update >/dev/null || warn "tldr --update failed; run it manually"
 fi
-merge_claude_settings
+setup_claude
 
 if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
   log "Installing tmux plugin manager..."

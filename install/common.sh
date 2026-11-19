@@ -128,6 +128,62 @@ merge_claude_settings() {
   fi
 }
 
+# atuin installs this hook into ~/.claude/settings.json, which aoe sandboxes share; their
+# image has no atuin, so the bare command fails on every Bash call there
+ATUIN_HOOK_UNGUARDED='atuin hook claude-code'
+ATUIN_HOOK_GUARDED='command -v atuin >/dev/null && atuin hook claude-code || true'
+
+guard_atuin_hook() {
+  local dst="$HOME/.claude/settings.json" tmp
+  [[ -f "$dst" ]] && require_cmd jq || return 0
+  tmp="$(mktemp)"
+  if jq --arg u "$ATUIN_HOOK_UNGUARDED" --arg g "$ATUIN_HOOK_GUARDED" \
+    'walk(if type == "object" and .command == $u then .command = $g else . end)' "$dst" >"$tmp"; then
+    if ! cmp -s "$tmp" "$dst"; then
+      log "Guarding atuin's Claude Code hook in $dst"
+      cat "$tmp" >"$dst"
+    fi
+  else
+    warn "Could not guard atuin's Claude Code hook (is $dst valid JSON?)"
+  fi
+  rm -f "$tmp"
+}
+
+# aoe mounts ~/.gitconfig into sandboxes but not the ~/.gitconfig.local it includes, which
+# holds the git identity
+AOE_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/agent-of-empires/config.toml"
+AOE_GITCONFIG_MOUNT="$HOME/.gitconfig.local:/root/.gitconfig.local:ro"
+
+ensure_aoe_gitconfig_mount() {
+  local line="extra_volumes = [\"$AOE_GITCONFIG_MOUNT\"]" tmp
+  [[ -d "${AOE_CONFIG%/*}" ]] || return 0
+  grep -qF "$AOE_GITCONFIG_MOUNT" "$AOE_CONFIG" 2>/dev/null && return 0
+  if [[ ! -f "$HOME/.gitconfig.local" ]]; then
+    # Docker would create a root-owned directory in its place
+    warn "No ~/.gitconfig.local yet; run git-identity, then rerun install.sh --stow-only for aoe sandboxes"
+    return 0
+  fi
+  if grep -qE '^[[:space:]]*extra_volumes[[:space:]]*=' "$AOE_CONFIG" 2>/dev/null; then
+    warn "Add \"$AOE_GITCONFIG_MOUNT\" to sandbox.extra_volumes in $AOE_CONFIG so aoe sandboxes get your git identity"
+    return 0
+  fi
+  local header='^[[:space:]]*\[sandbox\][[:space:]]*(#.*)?$'
+  if grep -qE "$header" "$AOE_CONFIG" 2>/dev/null; then
+    tmp="$(mktemp)"
+    awk -v l="$line" -v h="$header" '{ print } $0 ~ h { print l }' "$AOE_CONFIG" >"$tmp" && cat "$tmp" >"$AOE_CONFIG"
+    rm -f "$tmp"
+  else
+    printf '\n[sandbox]\n%s\n' "$line" >>"$AOE_CONFIG"
+  fi
+  log "Mounted ~/.gitconfig.local into aoe sandboxes ($AOE_CONFIG)"
+}
+
+setup_claude() {
+  merge_claude_settings
+  guard_atuin_hook
+  ensure_aoe_gitconfig_mount
+}
+
 # Point btop at the tracked catppuccin OLED theme. btop.conf itself isn't stowed:
 # btop rewrites it on exit, so only these two keys are set and the rest is left alone.
 set_btop_theme() {

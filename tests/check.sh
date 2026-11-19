@@ -64,6 +64,8 @@ step "wezterm mac installer tests"
 bash tests/wezterm-mac.sh || fail "wezterm-mac tests"
 step "wezterm windows installer tests (skipped without pwsh)"
 bash tests/wezterm-windows.sh || fail "wezterm-windows tests"
+step "agent session setup tests"
+bash tests/agent-sessions.sh || fail "agent-sessions tests"
 
 if [[ "${1:-}" == "--cleanroom" ]]; then
   for image in ubuntu:24.04 debian:12; do
