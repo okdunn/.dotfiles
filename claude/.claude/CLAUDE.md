@@ -9,10 +9,10 @@
   system-provided attribution guidance.
 
 ## Branches
-- One feature per branch. Before the first commit, if the current branch isn't named
-  `<type>/<short-slug>` (e.g. an Agent of Empires session branch like `berbers`), rename it
-  with `git branch -m <type>/<short-slug>`, using the commit types above.
-- Never rename `main`, `master`, or a branch that's already pushed; create a new branch instead.
+- In an Agent of Empires session (`$AOE_INSTANCE_ID` is set), the worktree starts on a branch
+  named after the session (e.g. `berbers`). Before your first commit, rename it to the feature
+  with `git branch -m <type>/<short-slug>`, using the commit types above. One feature per session.
+- Never rename `main`, `master`, or a branch that's already pushed.
 
 ## Code comments
 - Default to no comment. Write one only for what the code can't say itself: why a choice was

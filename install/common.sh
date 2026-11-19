@@ -163,14 +163,22 @@ ensure_aoe_gitconfig_mount() {
     warn "No ~/.gitconfig.local yet; run git-identity, then rerun install.sh --stow-only for aoe sandboxes"
     return 0
   fi
-  if grep -qE '^[[:space:]]*extra_volumes[[:space:]]*=' "$AOE_CONFIG" 2>/dev/null; then
+  # Regexes stay literal in the awk programs: gawk strips the backslash from "\[" in -v values
+  local empty='^[[:space:]]*extra_volumes[[:space:]]*=[[:space:]]*\[[[:space:]]*\][[:space:]]*$'
+  local header='^[[:space:]]*\[sandbox\][[:space:]]*(#.*)?$'
+  local prog
+  # aoe writes `extra_volumes = []` when it saves its settings
+  if grep -qE "$empty" "$AOE_CONFIG" 2>/dev/null; then
+    prog='/^[[:space:]]*extra_volumes[[:space:]]*=[[:space:]]*\[[[:space:]]*\][[:space:]]*$/ { print l; next } { print }'
+  elif grep -qE '^[[:space:]]*extra_volumes[[:space:]]*=' "$AOE_CONFIG" 2>/dev/null; then
     warn "Add \"$AOE_GITCONFIG_MOUNT\" to sandbox.extra_volumes in $AOE_CONFIG so aoe sandboxes get your git identity"
     return 0
+  elif grep -qE "$header" "$AOE_CONFIG" 2>/dev/null; then
+    prog='{ print } /^[[:space:]]*\[sandbox\][[:space:]]*(#.*)?$/ { print l }'
   fi
-  local header='^[[:space:]]*\[sandbox\][[:space:]]*(#.*)?$'
-  if grep -qE "$header" "$AOE_CONFIG" 2>/dev/null; then
+  if [[ -n "${prog:-}" ]]; then
     tmp="$(mktemp)"
-    awk -v l="$line" -v h="$header" '{ print } $0 ~ h { print l }' "$AOE_CONFIG" >"$tmp" && cat "$tmp" >"$AOE_CONFIG"
+    awk -v l="$line" "$prog" "$AOE_CONFIG" >"$tmp" && cat "$tmp" >"$AOE_CONFIG"
     rm -f "$tmp"
   else
     printf '\n[sandbox]\n%s\n' "$line" >>"$AOE_CONFIG"

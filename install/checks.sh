@@ -112,6 +112,10 @@ check_aoe_mount() {
     fi
   done
   _ok "aoe mounts ~/.gitconfig.local"
+  # The signing key path is a host path the sandbox can't see, so signed commits fail there
+  if [[ "$(git config --file "$HOME/.gitconfig.local" --get commit.gpgsign 2>/dev/null)" == true ]]; then
+    echo -e "  ${YELLOW}!${NC} commit signing is on in ~/.gitconfig.local; commits inside aoe sandboxes will fail to sign"
+  fi
 }
 
 check_tldr() {
