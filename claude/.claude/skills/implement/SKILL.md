@@ -53,6 +53,8 @@ has a PR in review, or the working directory isn't the repo the ticket is about 
 ## Conventions for this work
 - Branch: <type>/<id-lowercase>-<2–5 word slug>, type from feat|fix|refactor|docs|test|chore|perf|build|ci (rename the session branch to this in an Agent of Empires session)
 - Every commit ends with the trailer `Refs: <ID>`
+- Create or rename to this branch before the first commit, including the design doc commit
+- Record these conventions as constraints in the design doc, so the plan and every implementer carry them
 ```
 
 Keep the description and comments as written. Don't summarize them: the wording is the
