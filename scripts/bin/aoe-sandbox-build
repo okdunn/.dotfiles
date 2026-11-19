@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# aoe-sandbox-build — build the aoe sandbox image (aoe's base image plus mise).
+# Rerun to pick up a new aoe base image.
+set -euo pipefail
+
+DOTFILES_DIR="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/../.." && pwd)"
+SANDBOX_DIR="$DOTFILES_DIR/aoe/.config/agent-of-empires/sandbox"
+
+docker build --pull -t aoe-sandbox-dotfiles:latest "$SANDBOX_DIR"

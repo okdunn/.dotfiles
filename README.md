@@ -74,6 +74,17 @@ Claude Code: `~/.claude/CLAUDE.md` (global instructions) is stowed from `claude/
 the installer enforces only the keys in `install/claude-settings.json` (no commit/PR attribution)
 and keeps everything else on the machine.
 
+Agent of Empires (`aoe`): a TUI that runs Claude Code sessions in parallel, each in its own
+tmux session (optionally its own git worktree), with status detection and a diff viewer.
+`aoe` opens it; `n` new session, `Enter` attach, `Alt-g` lazygit in the session's dir, `?` help.
+Back to the list: `Ctrl-Space L` when aoe runs inside tmux (attaching switches your client),
+`Ctrl-Space d` outside it. Agents keep running either way.
+`aoe add . -w feat/x -b` starts Claude on a new branch in `../<repo>-worktrees/feat-x`.
+Config is `aoe/.config/agent-of-empires/config.toml` (Claude by default, Mocha OLED theme);
+the settings screen (`s`) writes through to it, so commit what you change there. mise
+installs and upgrades it, so aoe's own update check is off. The first session asks once to
+install status hooks into `~/.claude/settings.json`; accept, the settings merge keeps them.
+
 Per-machine overrides go in untracked `~/.zshrc.local` and `~/.gitconfig.local`.
 Per-project/tool shell config (PATHs, env vars) goes in untracked `~/.zshrc.d/<name>.zsh`,
 one file each (the installer creates the folder). `~/.zshrc` is a link into this repo, so an

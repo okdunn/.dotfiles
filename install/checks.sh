@@ -3,7 +3,7 @@
 # Health checks for an installed machine. Used by `dot doctor` and tests/cleanroom.sh.
 # Source install/common.sh first, then call run_checks; it returns non-zero on any failure.
 
-CHECK_TOOLS=(mise nvim tmux fzf fd bat atuin zoxide eza delta jq btop dust vivid pay-respects claude tldr)
+CHECK_TOOLS=(mise nvim tmux fzf fd bat atuin zoxide eza delta jq btop dust vivid pay-respects claude aoe tldr)
 
 _ok_count=0
 _fail_count=0

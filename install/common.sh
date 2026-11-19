@@ -33,7 +33,7 @@ save_profile() {
 }
 
 # Base packages stowed on every machine
-PACKAGES=(atuin bat btop claude eza git lazygit mise nvim scripts ssh tmux zsh)
+PACKAGES=(aoe atuin bat btop claude eza git lazygit mise nvim scripts ssh tmux zsh)
 
 # Keep only packages that exist in the repo, so a missing dir warns instead of aborting stow
 existing_packages() {
@@ -78,6 +78,11 @@ stow_packages() {
   # Real dirs, so stow links files inside them instead of symlinking the whole dir
   mkdir -p "$HOME/.config" "$HOME/.local/bin"
   mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
+  # aoe refuses to start when its app dir is group-writable, which a stow-created
+  # dir would be under umask 002
+  mkdir -p "$HOME/.config/agent-of-empires/themes" "$HOME/.config/agent-of-empires/sandbox"
+  chmod 700 "$HOME/.config/agent-of-empires" "$HOME/.config/agent-of-empires/themes" \
+    "$HOME/.config/agent-of-empires/sandbox"
 
   backup_conflicts "${pkgs[@]}"
   log "Stowing: ${pkgs[*]}"

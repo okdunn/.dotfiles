@@ -22,6 +22,9 @@ atuin  = "latest"
 vivid  = "latest"
 "github:iffse/pay-respects" = "latest"
 
+# AI agents
+"github:agent-of-empires/agent-of-empires" = "latest"
+
 # system & data
 btop       = "latest"
 dust       = "latest"

@@ -66,7 +66,13 @@ alias cld="claude"
 tmux() {
   if (( $# == 0 )) && [[ -z $TMUX ]]; then
     local name=${${PWD:t}//[.:]/_}
-    command tmux new-session -A -s "${name:-root}"
+    name=${name:-root}
+    # On a fresh server (aoe's own aoe_* agent sessions don't count) create an `aoe`
+    # session first so it heads the session list; quitting aoe leaves a shell behind
+    if (( $+commands[aoe] )) && ! command tmux ls -F '#S' 2>/dev/null | grep -qv '^aoe_'; then
+      command tmux new-session -d -s aoe -n aoe -c "$HOME" 'aoe; exec zsh'
+    fi
+    command tmux new-session -A -s "$name"
   else
     command tmux "$@"
   fi
