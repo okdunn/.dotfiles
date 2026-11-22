@@ -40,6 +40,7 @@ check java-from-java-version matches "$(current "$repo" java)" '^21(\.|$)'
 check dotnet-from-global-json is "$(current "$repo" dotnet)" 8.0.100
 check rust-env-not-stable bash -c '! (cd "$1" && mise env 2>/dev/null) | grep -q "RUSTUP_TOOLCHAIN=stable"' _ "$repo"
 check cargo-runs-pinned matches "$(cd "$repo" && mise exec -- cargo --version 2>&1)" 'cargo 1\.99\.1'
+check rust-hook-env-clears-inherited-stable env RUSTUP_TOOLCHAIN=stable bash -c 'cd "$1" && eval "$(mise hook-env -s bash --force 2>/dev/null)" && [[ "${RUSTUP_TOOLCHAIN-unset}" != stable ]]' _ "$repo"
 
 cp "$repo/rust-toolchain.toml" "$pinned/"
 printf '[tools]\nrust = "1.98.0"\n' >"$pinned/mise.toml"
