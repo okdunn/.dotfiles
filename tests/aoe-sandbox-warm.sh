@@ -41,7 +41,7 @@ case "$1" in
     for s in "${specs[@]}"; do touch "$mise/installed-$s"; done
     sleep 0.2
     [[ ! -e $STUB/run-fail ]] ;;
-  ps) cat "$STUB/running" ;;
+  ps) [[ ! -e $STUB/ps-fail ]] && cat "$STUB/running" ;;
   exec) cat "$STUB/gen-$2" ;;
   volume)
     case "$2" in
@@ -91,6 +91,10 @@ check gc-unused bash -c '[[ "$(cd "$1" && echo gen-*)" == gen-3 ]]' _ "$M"
 
 setup; warm --init; echo aoe-sandbox-0123abcd >"$STUB/running"; warm node@24; warm go@1.27
 check gc-unmarked-container-pins-nothing bash -c '[[ "$(cd "$1" && echo gen-*)" == gen-3 ]]' _ "$M"
+
+setup; warm --init; echo aoe-sandbox-0123abcd >"$STUB/running"; echo 1 >"$STUB/gen-aoe-sandbox-0123abcd"
+touch "$STUB/ps-fail"; warm node@24; status=$?
+check gc-skipped-when-ps-fails bash -c '[[ $1 == 0 && -d "$2/gen-1" && $(readlink "$2/current") == gen-2 ]]' _ "$status" "$M"
 
 setup; warm --init; touch "$STUB/run-fail"; warm node@24; status=$?
 check warm-failure-keeps-current bash -c '[[ $1 != 0 && $(readlink "$2/current") == gen-1 && ! -e "$2/gen-2" ]]' _ "$status" "$M"

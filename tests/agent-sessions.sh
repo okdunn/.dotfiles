@@ -151,19 +151,29 @@ setup; mounted "$PROF"; printf '[commit]\n\tgpgsign = true\n' >"$HOME/.gitconfig
 check doctor-aoe-signing bash -c 'grep -q "fails=0 oks=1" "$1" && grep -qi "sign" "$1"' _ "$SANDBOX/out"
 
 doctor_cache() { run 'check_aoe_cache; echo "fails=$_fail_count oks=$_ok_count"'; }
+# The current-generation check needs a usable runtime: `podman info` succeeds unless STUB_INFO_FAIL
+runtime() {
+  mkdir -p "$SANDBOX/bin" "$AOE_DIR"
+  printf '[sandbox]\ncontainer_runtime = "podman"\n' >"$AOE_TOML"
+  printf '#!/bin/sh\n[ "$1" != info ] || [ -z "$STUB_INFO_FAIL" ]\n' >"$SANDBOX/bin/podman"
+  chmod +x "$SANDBOX/bin/podman"
+}
 cache_mounted() { mkdir -p "${PROF%/*}"; printf '[sandbox]\n%s\n' "$CACHE_LINE" >"$PROF"; }
 cache_initialised() { mkdir -p "$CACHE/gen-1"; echo 1 >"$CACHE/gen-1/.generation"; ln -s gen-1 "$CACHE/current"; }
 
 setup; doctor_cache
 check doctor-cache-skip bash -c 'grep -q skipped "$1" && grep -q "fails=0" "$1"' _ "$SANDBOX/out"
 
-setup; cache_mounted; cache_initialised; doctor_cache
+setup; runtime; cache_mounted; cache_initialised; PATH="$SANDBOX/bin:$PATH" doctor_cache
 check doctor-cache-ok bash -c 'grep -q "fails=0 oks=2" "$1"' _ "$SANDBOX/out"
 
-setup; cache_mounted; doctor_cache
+setup; runtime; cache_mounted; PATH="$SANDBOX/bin:$PATH" doctor_cache
 check doctor-cache-no-current bash -c 'grep -q "fails=1" "$1" && grep -q -- --init "$1"' _ "$SANDBOX/out"
 
-setup; cache_mounted; cache_initialised; mkdir -p "$AOE_DIR/profiles/work"; echo '[sandbox]' >"$AOE_DIR/profiles/work/config.toml"; doctor_cache
+setup; runtime; cache_mounted; cache_initialised; mkdir -p "$AOE_DIR/profiles/work"; echo '[sandbox]' >"$AOE_DIR/profiles/work/config.toml"; doctor_cache
 check doctor-cache-unmounted bash -c 'grep -q "fails=1" "$1" && grep -q "profiles/work/config.toml" "$1"' _ "$SANDBOX/out"
+
+setup; runtime; cache_mounted; STUB_INFO_FAIL=1 PATH="$SANDBOX/bin:$PATH" doctor_cache
+check doctor-cache-runtime-unusable-skips bash -c 'grep -q "fails=0 oks=1" "$1" && grep -q skipped "$1"' _ "$SANDBOX/out"
 
 exit "$failed"

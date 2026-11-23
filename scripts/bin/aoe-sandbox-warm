@@ -40,12 +40,17 @@ switch_current() {
 # generation it actually uses is read from the marker file inside it. One without a readable
 # marker predates generations and pins nothing.
 gc() {
-  local pinned=" " c g dir
+  local pinned=" " names c g dir
+  # Without the list, any old generation may be in use: keep them all
+  if ! names=$(rt ps --filter name=aoe-sandbox- --format '{{.Names}}'); then
+    echo "couldn't list running sandboxes; old generations are kept until the next warm" >&2
+    return 0
+  fi
   while IFS= read -r c; do
     [[ -n $c ]] || continue
     g=$(rt exec "$c" cat /opt/mise/.generation 2>/dev/null) || continue
     [[ $g =~ ^[0-9]+$ ]] && pinned+="$g "
-  done < <(rt ps --filter name=aoe-sandbox- --format '{{.Names}}')
+  done <<<"$names"
   for dir in "$MISE_DIR"/gen-*; do
     [[ -d $dir && ${dir##*/} != "$(readlink "$MISE_DIR/current")" ]] || continue
     [[ $pinned == *" ${dir##*/gen-} "* ]] || remove_gen "$dir"

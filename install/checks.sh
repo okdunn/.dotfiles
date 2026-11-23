@@ -125,6 +125,11 @@ check_aoe_cache() {
     fi
   done < <(aoe_profile_configs)
   _ok "aoe mounts the toolchain cache"
+  # The installer only runs aoe-sandbox-warm --init where sandboxes can run
+  if in_container || ! aoe_runtime_usable; then
+    echo "  - aoe toolchain cache generation: skipped (no usable container runtime)"
+    return
+  fi
   if [[ -f "$AOE_MISE_DIR/current/.generation" ]]; then
     _ok "aoe toolchain cache at generation $(cat "$AOE_MISE_DIR/current/.generation")"
   else
