@@ -19,6 +19,7 @@ check() { # check name condition...
   shift
   if "$@"; then echo "PASS $name"; else echo "FAIL $name"; failed=1; fi
 }
+not() { ! "$@"; }
 in_container() { "$runtime" exec -w "$workdir" "$container" bash -c "$1" 2>&1; }
 
 cleanup() {
@@ -33,6 +34,9 @@ trap cleanup EXIT
 
 git -C "$repo" init -q -b main
 printf '[toolchain]\nchannel = "1.99.1"\n' >"$repo/rust-toolchain.toml"
+echo 26.13.0 >"$repo/.nvmrc"
+echo '{ "devDependencies": { "husky": "9.1.7" } }' >"$repo/package.json"
+mkdir "$repo/.husky" && echo 'grep -q "^ok" "$1"' >"$repo/.husky/commit-msg"
 git -C "$repo" add . && git -C "$repo" -c commit.gpgsign=false commit -qm init
 
 # Drop the pinned toolchain from the shared cache so the warm check can't pass on a leftover
@@ -60,13 +64,21 @@ done
 
 check cargo-on-path-pinned grep -q 'cargo 1\.99\.1' <<<"$(in_container 'cargo --version')"
 
+for _ in $(seq 24); do
+  in_container 'test -f .husky/_/h' >/dev/null && break
+  sleep 5
+done
+check husky-hooks-installed test -f "$worktrees/$(basename "$workdir")/.husky/_/h"
+check hooks-path-relative test "$(git -C "$repo" config core.hooksPath)" = .husky/_
+check hook-rejects-commit-in-sandbox not in_container 'git -c commit.gpgsign=false commit -q --allow-empty -m bad'
+
 in_container "touch /opt/mise/planted-$$" >/dev/null
 check session-writes-to-cache-discarded test ! -e "${mise_volume:-/nonexistent}/planted-$$"
 check warm-refuses-while-sandbox-runs bash -c '! "$1" "$2" >/dev/null 2>&1' _ "$warm" "$repo"
 
-in_container 'echo x >f.txt && git add f.txt && git -c commit.gpgsign=false commit -qm probe' >/dev/null
+in_container 'echo x >f.txt && git add f.txt && git -c commit.gpgsign=false commit -qm "ok probe"' >/dev/null
 check container-writes-owned-by-user test -z "$(find "$repo" "$worktrees" -not -user "$(id -u)" -print -quit)"
 check host-can-commit-after-container git -C "$worktrees/$(basename "$workdir")" -c commit.gpgsign=false \
-  commit -q --allow-empty -m host
+  commit -q --allow-empty -m "ok host"
 
 exit "$failed"

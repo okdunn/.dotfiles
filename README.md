@@ -110,12 +110,13 @@ version files and its `mise.toml` `[tools]`, never its other mise config).
 The container can write the repo, including the main checkout's `.git`, so the git guard
 (`zsh/.config/zsh/git-guard.zsh`) pins the settings that would make git on the host run
 something a sandbox planted: hooks, `core.fsmonitor`, pager, editor, ssh command, credential
-helpers. Hooks still run inside sandboxes, once they're installed there: a repo that installs
-them from a script the package manager skips (husky's `prepare` under pnpm's `ignoreScripts`)
-needs it run in each new worktree (`pnpm run prepare`), and a `core.hooksPath` that is an
-absolute host path doesn't exist in the container, so git skips the hooks silently (keep it
-relative, e.g. `.husky/_`). On the host, run one command with the repo's own hooks via
-`githooks <git args>` once you've checked them. Not covered: filter/diff/merge
+helpers. Hooks still run inside sandboxes: `.git/hooks` is shared by every worktree, and for repos
+that use husky the `on_launch` hook installs its generated hooks in each new worktree (they're
+not committed, and pnpm's `ignoreScripts` skips husky's `prepare`), which also sets
+`core.hooksPath` relative. Other hook managers (pre-commit, lefthook) aren't handled, and an
+absolute `core.hooksPath` doesn't exist in the container, so git skips those hooks silently.
+On the host, run one command with the repo's own hooks via `githooks <git args>` once you've
+checked them. Not covered: filter/diff/merge
 drivers, per-command pagers and git 2.54+ config hooks (`hook.*`), and anything you run yourself
 (`pnpm test`, `just check`) after a session. Review a session's diff before running its code.
 `tests/aoe-sandbox-session.sh` (a real sandboxed worktree session) and

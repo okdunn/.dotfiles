@@ -33,7 +33,13 @@ split_view = false
 # inside the sandbox. With a mise.lock, install strictly from it: the image's mise can be newer
 # than the one that wrote it and would rewrite it, leaving every worktree dirty. A failed
 # install mustn't block the session; the agent can retry it.
-on_launch = ["{ [ -f mise.lock ] && export MISE_LOCKED=true; mise install; } || true"]
+# Then husky's hooks: they're generated, not committed, so a new worktree has none, and repos that
+# set pnpm's ignoreScripts never run its prepare. node_modules isn't there yet, so fetch the
+# version the repo pins. This also makes core.hooksPath relative, so hooks run inside sandboxes.
+on_launch = [
+  "{ [ -f mise.lock ] && export MISE_LOCKED=true; mise install; } || true",
+  '''v=$(node -p 'const p = require("./package.json"); ({...p.dependencies, ...p.devDependencies}).husky || ""' 2>/dev/null | tr -d '~^'); [ -z "$v" ] || npx --yes "husky@$v" || true''',
+]
 
 [host_hooks]
 
