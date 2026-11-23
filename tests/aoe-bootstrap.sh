@@ -24,7 +24,7 @@ setup() {
   cat >"$SANDBOX/stub" <<'STUB'
 #!/bin/bash
 n=${0##*/}
-echo "$n $* | cwd=$PWD | MISE_LOCKED=${MISE_LOCKED:-}" >>"$CALLS"
+echo "$n $* | cwd=$PWD | MISE_LOCKED=${MISE_LOCKED:-} | BUNDLE_FROZEN=${BUNDLE_FROZEN:-}" >>"$CALLS"
 v=${n//-/_}
 s=SLEEP_$v
 [ -z "${!s:-}" ] || sleep "${!s}"
@@ -69,10 +69,13 @@ setup; stub mise; touch mise.lock; run
 check toolchains-locked bash -c 'grep -q "^mise install .*MISE_LOCKED=true" "$1"' _ "$CALLS"
 
 setup; stub mise; touch .nvmrc; run
-check toolchains-version-file bash -c 'grep -q "^mise install .*MISE_LOCKED=$" "$1"' _ "$CALLS"
+check toolchains-version-file bash -c 'grep -q "^mise install .*MISE_LOCKED= |" "$1"' _ "$CALLS"
 
 setup; stub pnpm; touch pnpm-lock.yaml; run
 check deps-pnpm-frozen called "^pnpm install --frozen-lockfile"
+
+setup; stub bundle; touch Gemfile.lock; run
+check deps-bundle-frozen bash -c 'grep -q "^bundle install .*BUNDLE_FROZEN=true" "$1"' _ "$CALLS"
 
 setup; stub go; touch go.work; mkdir a b
 export GO_WORK_JSON='{"Use":[{"DiskPath":"./a"},{"DiskPath":"./b"}]}'

@@ -69,7 +69,7 @@ step_deps() {
   dep bun.lock bun.lockb -- bun install --frozen-lockfile
   dep uv.lock -- uv sync --frozen
   dep Cargo.lock -- cargo fetch --locked
-  dep Gemfile.lock -- bundle install
+  BUNDLE_FROZEN=true dep Gemfile.lock -- bundle install
   dep go.mod -- go mod download
   if [[ -f go.work ]] && command -v go >/dev/null; then
     deps_seen=1
