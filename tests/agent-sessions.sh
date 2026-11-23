@@ -94,7 +94,7 @@ check aoe-empty-array bash -c 'grep -qxF "extra_volumes = [\"$2\"]" "$1" && [[ $
 
 # --- dot doctor checks --------------------------------------------------------------------
 
-# shellcheck disable=SC2317  # called through check
+# shellcheck disable=SC2317,SC2329  # called through check
 not() { ! "$@"; }
 setup; settings_with "$GUARDED"
 check doctor-atuin-ok run check_atuin_hook
