@@ -150,5 +150,10 @@ docker run --rm -v "$PWD:/src:ro" ubuntu:24.04 bash /src/tests/cleanroom.sh
 ```
 
 Tool versions are `latest` in mise with no lockfile, so a fresh machine gets current releases
-and `dot update` moves existing ones forward. Pin a tool in `mise/.config/mise/config.toml`
-if a release breaks something.
+and `dot update` moves existing ones forward, except aoe, which is pinned. Pin a tool in
+`mise/.config/mise/config.toml` if a release breaks something.
+
+To upgrade aoe, bump its pin there, run `bash tests/aoe-sandbox-session.sh`, then commit; `dot check`
+fails while the installed version differs from the pin. `aoe-sandbox-build` keeps the image it
+replaces as `aoe-sandbox-dotfiles:previous`; roll back with
+`podman tag aoe-sandbox-dotfiles:previous aoe-sandbox-dotfiles:latest`.

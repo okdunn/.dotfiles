@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # aoe-sandbox-build — build the aoe sandbox image (aoe's base image plus mise).
-# Rerun to pick up a new aoe base image.
+# Rerun to pick up a new aoe base image. The image it replaces stays as :previous; roll back with
+#   <runtime> tag aoe-sandbox-dotfiles:previous aoe-sandbox-dotfiles:latest
 set -euo pipefail
 
 DOTFILES_DIR="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/../.." && pwd)"
@@ -9,4 +10,17 @@ RUNTIME=$(sed -n 's/^container_runtime = "\(.*\)"/\1/p' "$HOME/.config/agent-of-
 
 BOOTSTRAP_SHA256=$(sha256sum "$SANDBOX_DIR/aoe-bootstrap" | cut -d' ' -f1)
 
-"${RUNTIME:-docker}" build --pull --build-arg "BOOTSTRAP_SHA256=$BOOTSTRAP_SHA256" -t aoe-sandbox-dotfiles:latest "$SANDBOX_DIR"
+RT=${RUNTIME:-docker}
+
+if "$RT" image inspect aoe-sandbox-dotfiles:latest &>/dev/null; then
+  "$RT" tag aoe-sandbox-dotfiles:latest aoe-sandbox-dotfiles:previous
+fi
+
+"$RT" build --pull --build-arg "BOOTSTRAP_SHA256=$BOOTSTRAP_SHA256" -t aoe-sandbox-dotfiles:latest "$SANDBOX_DIR"
+
+# Rebuilding orphans the old :latest; the label keeps this from touching anyone else's images
+while read -r id; do
+  [[ -n $id ]] || continue
+  label=$("$RT" image inspect "$id" --format '{{index .Config.Labels "dotfiles.bootstrap-sha256"}}' 2>/dev/null || true)
+  [[ -z $label ]] || "$RT" rmi "$id" >/dev/null 2>&1 || true
+done < <("$RT" images --filter dangling=true --format '{{.ID}}')

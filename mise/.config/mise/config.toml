@@ -23,7 +23,8 @@ vivid  = "latest"
 "github:iffse/pay-respects" = "latest"
 
 # AI agents
-"github:agent-of-empires/agent-of-empires" = "latest"
+# Pinned: sandbox bootstrap depends on aoe internals; upgrade deliberately (see README)
+"github:agent-of-empires/agent-of-empires" = "1.24.0"
 
 # system & data
 btop       = "latest"

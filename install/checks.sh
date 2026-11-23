@@ -168,6 +168,19 @@ check_aoe_sandbox() {
   fi
 }
 
+check_aoe_version() {
+  command -v aoe &>/dev/null || return 0
+  local pin have
+  pin=$(sed -n 's/^"github:agent-of-empires\/agent-of-empires" *= *"\(.*\)"/\1/p' "$HOME/.config/mise/config.toml" 2>/dev/null)
+  [[ -n $pin ]] || return 0
+  have=$(aoe --version | awk '{print $2}')
+  if [[ $have == "$pin" ]]; then
+    _ok "aoe $have matches the mise pin"
+  else
+    _fail "aoe $have matches the mise pin $pin" "bump the pin after running tests/aoe-sandbox-session.sh"
+  fi
+}
+
 check_tldr() {
   tldr git | grep -qi git
 }
@@ -194,6 +207,7 @@ run_checks() {
   check_aoe_mount
   check_aoe_cache
   check_aoe_sandbox
+  check_aoe_version
   _check "git identity set" sh -c 'git config --global --includes user.name && git config --global --includes user.email'
   _check "tldr pages cached" check_tldr
 
