@@ -12,6 +12,8 @@ path=($HOME/bin(N) $HOME/.local/bin /usr/local/bin $path $GOPATH/bin(N) /snap/bi
 # mise must activate before anything that uses tools it installs (atuin, eza, zoxide...)
 (( $+commands[mise] )) && eval "$(mise activate zsh)"
 
+source "${XDG_CONFIG_HOME:-$HOME/.config}/zsh/git-guard.zsh"
+
 # History (atuin handles search; this keeps plain zsh history sane too)
 HISTFILE="${XDG_STATE_HOME:-$HOME/.local/state}/zsh/history"
 [[ -d ${HISTFILE:h} ]] || mkdir -p ${HISTFILE:h}

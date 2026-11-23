@@ -41,7 +41,7 @@ while IFS= read -r -d '' f; do
     '#!'*sh* | '# shellcheck shell='*) bash_files+=("$f") ;; # shebang, or a sourced file's directive
   esac
 done < <(git ls-files -z --cached --others --exclude-standard)
-zsh_files+=(zsh/.zshrc)
+zsh_files+=(zsh/.zshrc zsh/.config/zsh/git-guard.zsh)
 
 step "shellcheck (${#bash_files[@]} files)"
 tool shellcheck -x "${bash_files[@]}" || fail shellcheck
