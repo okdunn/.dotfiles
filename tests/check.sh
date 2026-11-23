@@ -66,6 +66,10 @@ step "wezterm windows installer tests (skipped without pwsh)"
 bash tests/wezterm-windows.sh || fail "wezterm-windows tests"
 step "agent session setup tests"
 bash tests/agent-sessions.sh || fail "agent-sessions tests"
+step "aoe sandbox setup tests"
+bash tests/aoe-sandbox-setup.sh || fail "aoe-sandbox-setup tests"
+step "git guard tests"
+bash tests/git-guard.sh || fail "git-guard tests"
 
 if [[ "${1:-}" == "--cleanroom" ]]; then
   for image in ubuntu:24.04 debian:12; do

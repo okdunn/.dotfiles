@@ -209,6 +209,28 @@ add_aoe_mount() {
   log "Mounted ~/.gitconfig.local into aoe sandboxes ($cfg)"
 }
 
+aoe_setting() { sed -n "s/^$1 = \"\(.*\)\"/\1/p" "$AOE_DIR/config.toml" 2>/dev/null | head -n1; }
+aoe_runtime() { local rt; rt=$(aoe_setting container_runtime); echo "${rt:-docker}"; }
+aoe_image() { aoe_setting default_image; }
+
+# A runtime can't start sandboxes from inside another container (e.g. tests/cleanroom.sh)
+in_container() { [[ -f /.dockerenv || -f /run/.containerenv ]]; }
+aoe_runtime_usable() { ! in_container && "$(aoe_runtime)" info &>/dev/null; }
+aoe_image_present() { "$(aoe_runtime)" image inspect "$(aoe_image)" &>/dev/null; }
+
+# default_image is built locally, so a new machine (or a pruned one) can't start sandboxes
+# until it exists
+ensure_aoe_sandbox_image() {
+  [[ -f "$AOE_DIR/config.toml" ]] || return 0
+  if ! aoe_runtime_usable; then
+    warn "$(aoe_runtime) isn't usable here; run aoe-sandbox-build once it is, or aoe sandboxes won't start"
+    return 0
+  fi
+  aoe_image_present && return 0
+  log "Building the aoe sandbox image (the first build downloads ~10 GB)..."
+  "$DOTFILES_DIR/scripts/bin/aoe-sandbox-build" || warn "aoe-sandbox-build failed; aoe sandboxes won't start"
+}
+
 setup_claude() {
   merge_claude_settings
   guard_atuin_hook

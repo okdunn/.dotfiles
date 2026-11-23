@@ -156,6 +156,7 @@ if ! tldr tar >/dev/null 2>&1; then
   tldr --update >/dev/null || warn "tldr --update failed; run it manually"
 fi
 setup_claude
+ensure_aoe_sandbox_image
 
 if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
   log "Installing tmux plugin manager..."
