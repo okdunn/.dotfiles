@@ -9,6 +9,10 @@ ENV MISE_DATA_DIR=/opt/mise \
     MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS=rust,node,python,ruby,java,dotnet \
     PATH=/opt/mise/shims:$PATH
 
+# mise installs rust through rustup, which keeps toolchains here rather than in MISE_DATA_DIR
+ENV CARGO_HOME=/opt/mise/cargo \
+    RUSTUP_HOME=/opt/mise/rustup
+
 # The container is the isolation boundary, so a repo's mise.toml needn't be trusted by hand
 ENV MISE_TRUSTED_CONFIG_PATHS=/
 

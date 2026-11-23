@@ -49,7 +49,7 @@ show_spans = false
 [sandbox]
 allow_image_pull = true
 auto_cleanup = true
-container_runtime = "docker"
+container_runtime = "podman"
 default_image = "aoe-sandbox-dotfiles:latest"
 default_terminal_mode = "host"
 enabled_by_default = true
@@ -60,6 +60,9 @@ environment = [
     "NO_COLOR",
 ]
 extra_volumes = []
+# Shared across sessions so each one doesn't reinstall the same toolchains. Not in
+# extra_volumes: a profile's list replaces the global one, and the installer manages those.
+extra_run_args = ["-v", "aoe-mise:/opt/mise"]
 mount_ssh = false
 privileged = false
 selinux_relabel = false
