@@ -7,4 +7,6 @@ DOTFILES_DIR="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/../.." && pwd)"
 SANDBOX_DIR="$DOTFILES_DIR/aoe/.config/agent-of-empires/sandbox"
 RUNTIME=$(sed -n 's/^container_runtime = "\(.*\)"/\1/p' "$HOME/.config/agent-of-empires/config.toml")
 
-"${RUNTIME:-docker}" build --pull -t aoe-sandbox-dotfiles:latest "$SANDBOX_DIR"
+BOOTSTRAP_SHA256=$(sha256sum "$SANDBOX_DIR/aoe-bootstrap" | cut -d' ' -f1)
+
+"${RUNTIME:-docker}" build --pull --build-arg "BOOTSTRAP_SHA256=$BOOTSTRAP_SHA256" -t aoe-sandbox-dotfiles:latest "$SANDBOX_DIR"

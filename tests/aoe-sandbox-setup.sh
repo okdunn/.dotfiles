@@ -15,13 +15,13 @@ setup() {
   unset XDG_CONFIG_HOME STUB_INFO_FAIL STUB_ROOTLESS
   mkdir -p "$HOME" "$STUB" "$SANDBOX/bin"
   AOE_TOML="$HOME/.config/agent-of-empires/config.toml"
-  # Answers like podman: `info` (rootless via --format), `image inspect`, and `build`
+  # Answers like podman: `info` (rootless via --format), `image inspect` (--format prints the stubbed label), and `build`
   cat >"$SANDBOX/bin/podman" <<'EOF'
 #!/bin/sh
 case "$1" in
   info) [ -z "$STUB_INFO_FAIL" ] || exit 1; [ "$2" != --format ] || echo "${STUB_ROOTLESS:-true}" ;;
-  image) [ -e "$STUB/image" ] ;;
-  build) touch "$STUB/image" "$STUB/built" ;;
+  image) [ -e "$STUB/image" ] || exit 1; [ "$4" != --format ] || cat "$STUB/label" 2>/dev/null ;;
+  build) touch "$STUB/image" "$STUB/built"; echo "$*" >"$STUB/build-args" ;;
 esac
 EOF
   chmod +x "$SANDBOX/bin/podman"
@@ -42,6 +42,7 @@ check() { # check name condition...
   shift
   if "$@"; then echo "PASS $name"; else echo "FAIL $name"; failed=1; fi
 }
+BOOTSTRAP_SHA=$(sha256sum "$REPO/aoe/.config/agent-of-empires/sandbox/aoe-bootstrap" | cut -d' ' -f1)
 out_has() { grep -q "$1" "$SANDBOX/out"; }
 
 # --- ensure_aoe_sandbox_image ---------------------------------------------------------------
@@ -59,15 +60,22 @@ check ensure-warns-runtime-unusable bash -c '! [[ -e "$1/built" ]] && grep -q WA
 setup; run ensure_aoe_sandbox_image
 check ensure-skips-without-aoe bash -c '! [[ -e "$1/built" ]] && ! grep -q WARN "$2"' _ "$STUB" "$SANDBOX/out"
 
+setup; configured; run "$REPO/scripts/bin/aoe-sandbox-build"
+check build-passes-bootstrap-sha grep -q "BOOTSTRAP_SHA256=$BOOTSTRAP_SHA" "$STUB/build-args"
+
 # --- check_aoe_sandbox -----------------------------------------------------------------------
 
-setup; configured; touch "$STUB/image"; doctor
-check doctor-sandbox-ok out_has "fails=0 oks=3"
+setup; configured; touch "$STUB/image"; echo "$BOOTSTRAP_SHA" >"$STUB/label"; doctor
+check doctor-sandbox-ok out_has "fails=0 oks=4"
+check doctor-bootstrap-current bash -c 'grep -q "bootstrap" "$1"' _ "$SANDBOX/out"
+
+setup; configured; touch "$STUB/image"; echo stale >"$STUB/label"; doctor
+check doctor-bootstrap-stale bash -c 'grep -q "fails=1" "$1" && grep -q aoe-sandbox-build "$1"' _ "$SANDBOX/out"
 
 setup; configured; doctor
 check doctor-sandbox-no-image bash -c 'grep -q "fails=1" "$1" && grep -q aoe-sandbox-build "$1"' _ "$SANDBOX/out"
 
-setup; configured; touch "$STUB/image"; export STUB_ROOTLESS=false; doctor
+setup; configured; touch "$STUB/image"; echo "$BOOTSTRAP_SHA" >"$STUB/label"; export STUB_ROOTLESS=false; doctor
 check doctor-sandbox-rootful-podman out_has "fails=1"
 
 setup; configured; export STUB_INFO_FAIL=1; doctor

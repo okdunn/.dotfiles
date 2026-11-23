@@ -100,8 +100,13 @@ aoe sandboxes (on by default) run each session in a rootless Podman container, s
 agent writes into the repo stay owned by you; Docker is left alone for your own containers.
 The image is aoe's base plus mise (`aoe/.config/agent-of-empires/sandbox/Dockerfile`), built
 locally by `aoe-sandbox-build`; the installer builds it when missing and `dot update` rebuilds it
-for aoe's newer base image. When a session starts, an `on_launch` hook runs `mise install` inside
-it, so the repo's pinned versions (`mise.toml`, `rust-toolchain.toml`, `.nvmrc`, …) are on PATH.
+for aoe's newer base image. When a session starts, the `on_launch` hook runs `aoe-bootstrap`
+(baked into the image; `dot doctor` flags an image built from an older copy) inside it. It
+installs the repo's pinned toolchains (`mise.toml`, `rust-toolchain.toml`, `.nvmrc`, …) so they're
+on PATH, then the dependencies at the repo root and in `go.work`/workspace members, then the
+husky, lefthook or pre-commit hooks. Each step is limited to 900 s (`AOE_BOOTSTRAP_TIMEOUT`),
+the agent waits for the script, and its log is `/tmp/aoe-bootstrap.log` in the container.
+Package caches sit on the container's own filesystem (`/var/cache/aoe`), not a host mount.
 Toolchains come from a cache shared by all sessions (the `aoe-mise` volume), mounted as an
 overlay: sessions read it, but what they write is discarded, so one session can't tamper with
 what the next one runs. That also means a session's own installs aren't kept: add them with
@@ -111,10 +116,10 @@ The container can write the repo, including the main checkout's `.git`, so the g
 (`zsh/.config/zsh/git-guard.zsh`) pins the settings that would make git on the host run
 something a sandbox planted: hooks, `core.fsmonitor`, pager, editor, ssh command, credential
 helpers. Hooks still run inside sandboxes: `.git/hooks` is shared by every worktree, and for repos
-that use husky the `on_launch` hook installs its generated hooks in each new worktree (they're
-not committed, and pnpm's `ignoreScripts` skips husky's `prepare`), which also sets
-`core.hooksPath` relative. Other hook managers (pre-commit, lefthook) aren't handled, and an
-absolute `core.hooksPath` doesn't exist in the container, so git skips those hooks silently.
+that use husky, lefthook or pre-commit, `aoe-bootstrap` installs their generated hooks in each new
+worktree (they're not committed, and pnpm's `ignoreScripts` skips husky's `prepare`), which also
+sets husky's `core.hooksPath` relative. An absolute `core.hooksPath` doesn't exist in the
+container, so git skips those hooks silently.
 On the host, run one command with the repo's own hooks via `githooks <git args>` once you've
 checked them. Not covered: filter/diff/merge
 drivers, per-command pagers and git 2.54+ config hooks (`hook.*`), and anything you run yourself

@@ -21,3 +21,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends libicu-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh
+
+# Package caches live on the container's own filesystem, never a host mount, so a session's
+# downloads can't reach other sessions or the host
+ENV XDG_CACHE_HOME=/var/cache/aoe \
+    npm_config_cache=/var/cache/aoe/npm \
+    npm_config_store_dir=/var/cache/aoe/pnpm-store \
+    GOPATH=/var/cache/aoe/go \
+    UV_CACHE_DIR=/var/cache/aoe/uv \
+    BUNDLE_PATH=/var/cache/aoe/bundle
+
+COPY aoe-bootstrap /usr/local/bin/aoe-bootstrap
+
+# aoe-sandbox-build passes the script's hash so dot doctor can tell when the image is stale
+ARG BOOTSTRAP_SHA256
+LABEL dotfiles.bootstrap-sha256=$BOOTSTRAP_SHA256

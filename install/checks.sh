@@ -134,6 +134,12 @@ check_aoe_sandbox() {
   [[ $rt == podman ]] && _check "podman runs rootless" podman_rootless
   if aoe_image_present; then _ok "aoe sandbox image $(aoe_image) built"; else
     _fail "aoe sandbox image $(aoe_image) built" "run aoe-sandbox-build"
+    return
+  fi
+  if [[ $(aoe_image_bootstrap_sha) == "$(aoe_bootstrap_sha)" ]]; then
+    _ok "aoe sandbox image has the current aoe-bootstrap"
+  else
+    _fail "aoe sandbox image has the current aoe-bootstrap" "run aoe-sandbox-build"
   fi
 }
 

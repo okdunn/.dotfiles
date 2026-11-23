@@ -29,17 +29,9 @@ context_lines = 3
 split_view = false
 
 [hooks]
-# Install the repo's pinned toolchains before the agent starts, so they're on PATH (shims)
-# inside the sandbox. With a mise.lock, install strictly from it: the image's mise can be newer
-# than the one that wrote it and would rewrite it, leaving every worktree dirty. A failed
-# install mustn't block the session; the agent can retry it.
-# Then husky's hooks: they're generated, not committed, so a new worktree has none, and repos that
-# set pnpm's ignoreScripts never run its prepare. node_modules isn't there yet, so fetch the
-# version the repo pins. This also makes core.hooksPath relative, so hooks run inside sandboxes.
-on_launch = [
-  "{ [ -f mise.lock ] && export MISE_LOCKED=true; mise install; } || true",
-  '''v=$(node -p 'const p = require("./package.json"); ({...p.dependencies, ...p.devDependencies}).husky || ""' 2>/dev/null | tr -d '~^'); [ -z "$v" ] || npx --yes "husky@$v" || true''',
-]
+# One script rather than inline commands: it's baked into the image, logs each step, and always
+# exits 0 so a failed step never blocks the session.
+on_launch = ["aoe-bootstrap"]
 
 [host_hooks]
 
