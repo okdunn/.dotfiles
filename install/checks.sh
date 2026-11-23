@@ -112,6 +112,26 @@ check_aoe_mount() {
   fi
 }
 
+check_aoe_cache() {
+  local cfg
+  if [[ ! -d "$AOE_DIR" ]]; then
+    echo "  - aoe toolchain cache: not configured, skipped"
+    return
+  fi
+  while IFS= read -r cfg; do
+    if ! grep -qF "$AOE_MISE_MOUNT" "$cfg" 2>/dev/null; then
+      _fail "aoe mounts the toolchain cache" "missing in $cfg; run install.sh --stow-only"
+      return
+    fi
+  done < <(aoe_profile_configs)
+  _ok "aoe mounts the toolchain cache"
+  if [[ -f "$AOE_MISE_DIR/current/.generation" ]]; then
+    _ok "aoe toolchain cache at generation $(cat "$AOE_MISE_DIR/current/.generation")"
+  else
+    _fail "aoe toolchain cache initialised" "$AOE_MISE_DIR/current is missing; run aoe-sandbox-warm --init"
+  fi
+}
+
 podman_rootless() { [[ $(podman info --format '{{.Host.Security.Rootless}}' 2>/dev/null) == true ]]; }
 
 check_aoe_sandbox() {
@@ -167,6 +187,7 @@ run_checks() {
   _check "Claude Code settings merged" check_claude_settings
   _check "atuin Claude hook guarded (run install.sh --stow-only)" check_atuin_hook
   check_aoe_mount
+  check_aoe_cache
   check_aoe_sandbox
   _check "git identity set" sh -c 'git config --global --includes user.name && git config --global --includes user.email'
   _check "tldr pages cached" check_tldr

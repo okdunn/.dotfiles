@@ -107,11 +107,17 @@ on PATH, then the dependencies at the repo root and in `go.work`/workspace membe
 husky, lefthook or pre-commit hooks. Each step is limited to 900 s (`AOE_BOOTSTRAP_TIMEOUT`),
 the agent waits for the script, and its log is `/tmp/aoe-bootstrap.log` in the container.
 Package caches sit on the container's own filesystem (`/var/cache/aoe`), not a host mount.
-Toolchains come from a cache shared by all sessions (the `aoe-mise` volume), mounted as an
+Toolchains come from a cache shared by all sessions (`~/.local/share/aoe-mise`), mounted as an
 overlay: sessions read it, but what they write is discarded, so one session can't tamper with
 what the next one runs. That also means a session's own installs aren't kept: add them with
-`aoe-sandbox-warm <repo-dir | tool@version>...` while no sandbox is running (it reads a repo's
-version files and its `mise.toml` `[tools]`, never its other mise config).
+`aoe-sandbox-warm <repo-dir | tool@version>...` (it reads a repo's version files and its
+`mise.toml` `[tools]`, never its other mise config). The cache is kept in generations
+(`gen-1`, `gen-2`, …) with `current` pointing at the newest: a warm installs into a copy of
+`current` and switches it once the install succeeds, so it can run while sessions do. Each
+session keeps the generation it started with; new ones get the new one, and the warm deletes
+generations no running sandbox uses. The installer runs `aoe-sandbox-warm --init` to create
+`gen-1`, moving in the old `aoe-mise` volume if there is one; the mount itself goes in each aoe
+profile's config, next to the git identity mount.
 The container can write the repo, including the main checkout's `.git`, so the git guard
 (`zsh/.config/zsh/git-guard.zsh`) pins the settings that would make git on the host run
 something a sandbox planted: hooks, `core.fsmonitor`, pager, editor, ssh command, credential
