@@ -45,9 +45,10 @@ scripts fetch from GitHub, so push changes to `wezterm.lua` before rerunning the
 
 - `dot update` — pull the repo, relink, `mise self-update` + `mise upgrade`, update antidote,
   tmux and Neovim plugins (`Lazy sync` rewrites `lazy-lock.json`; commit it to keep the bump),
-  refresh tldr pages. A failing step warns and the rest still run.
+  refresh tldr pages, rebuild the aoe sandbox image. A failing step warns and the rest still run.
 - `dot doctor` — check this machine: zsh starts cleanly, tools are on PATH, every package is
-  linked with no stow conflicts, tmux plugins, bat/btop themes, Claude settings, git identity, tldr.
+  linked with no stow conflicts, tmux plugins, bat/btop themes, Claude settings, git identity, tldr,
+  aoe sandboxes (rootless Podman works, image built).
 - `dot check` — lint the repo (shellcheck, `bash -n`/`zsh -n`, stylua). `dot check --cleanroom`
   also runs the Docker install test on Ubuntu 24.04 and Debian 12. Nothing enforces this;
   there is no hosted CI, so run it before pushing.
@@ -94,6 +95,31 @@ Config is `aoe/.config/agent-of-empires/config.toml` (Claude by default, Mocha O
 the settings screen (`s`) writes through to it, so commit what you change there. mise
 installs and upgrades it, so aoe's own update check is off. The first session asks once to
 install status hooks into `~/.claude/settings.json`; accept, the settings merge keeps them.
+
+aoe sandboxes (on by default) run each session in a rootless Podman container, so files an
+agent writes into the repo stay owned by you; Docker is left alone for your own containers.
+The image is aoe's base plus mise (`aoe/.config/agent-of-empires/sandbox/Dockerfile`), built
+locally by `aoe-sandbox-build`; the installer builds it when missing and `dot update` rebuilds it
+for aoe's newer base image. When a session starts, an `on_launch` hook runs `mise install` inside
+it, so the repo's pinned versions (`mise.toml`, `rust-toolchain.toml`, `.nvmrc`, …) are on PATH.
+Toolchains come from a cache shared by all sessions (the `aoe-mise` volume), mounted as an
+overlay: sessions read it, but what they write is discarded, so one session can't tamper with
+what the next one runs. That also means a session's own installs aren't kept: add them with
+`aoe-sandbox-warm <repo-dir | tool@version>...` while no sandbox is running (it reads a repo's
+version files and its `mise.toml` `[tools]`, never its other mise config).
+The container can write the repo, including the main checkout's `.git`, so the git guard
+(`zsh/.config/zsh/git-guard.zsh`) pins the settings that would make git on the host run
+something a sandbox planted: hooks, `core.fsmonitor`, pager, editor, ssh command, credential
+helpers. Hooks still run inside sandboxes, once they're installed there: a repo that installs
+them from a script the package manager skips (husky's `prepare` under pnpm's `ignoreScripts`)
+needs it run in each new worktree (`pnpm run prepare`), and a `core.hooksPath` that is an
+absolute host path doesn't exist in the container, so git skips the hooks silently (keep it
+relative, e.g. `.husky/_`). On the host, run one command with the repo's own hooks via
+`githooks <git args>` once you've checked them. Not covered: filter/diff/merge
+drivers, per-command pagers and git 2.54+ config hooks (`hook.*`), and anything you run yourself
+(`pnpm test`, `just check`) after a session. Review a session's diff before running its code.
+`tests/aoe-sandbox-session.sh` (a real sandboxed worktree session) and
+`tests/mise-repo-versions.sh` need the network and take minutes, so `dot check` doesn't run them.
 
 Per-machine overrides go in untracked `~/.zshrc.local` and `~/.gitconfig.local`.
 Per-project/tool shell config (PATHs, env vars) goes in untracked `~/.zshrc.d/<name>.zsh`,
