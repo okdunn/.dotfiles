@@ -112,6 +112,31 @@ check_aoe_mount() {
   fi
 }
 
+podman_rootless() { [[ $(podman info --format '{{.Host.Security.Rootless}}' 2>/dev/null) == true ]]; }
+
+check_aoe_sandbox() {
+  if [[ ! -f "$AOE_DIR/config.toml" ]]; then
+    echo "  - aoe sandbox: not configured, skipped"
+    return
+  fi
+  if in_container; then
+    echo "  - aoe sandbox: skipped inside a container"
+    return
+  fi
+  local rt
+  rt=$(aoe_runtime)
+  if ! aoe_runtime_usable; then
+    _fail "$rt usable for aoe sandboxes" "\`$rt info\` fails"
+    return
+  fi
+  _ok "$rt usable for aoe sandboxes"
+  # Rootful containers leave root-owned files in repos and worktrees
+  [[ $rt == podman ]] && _check "podman runs rootless" podman_rootless
+  if aoe_image_present; then _ok "aoe sandbox image $(aoe_image) built"; else
+    _fail "aoe sandbox image $(aoe_image) built" "run aoe-sandbox-build"
+  fi
+}
+
 check_tldr() {
   tldr git | grep -qi git
 }
@@ -136,6 +161,7 @@ run_checks() {
   _check "Claude Code settings merged" check_claude_settings
   _check "atuin Claude hook guarded (run install.sh --stow-only)" check_atuin_hook
   check_aoe_mount
+  check_aoe_sandbox
   _check "git identity set" sh -c 'git config --global --includes user.name && git config --global --includes user.email'
   _check "tldr pages cached" check_tldr
 

@@ -44,6 +44,9 @@ cmd_update() {
   # sync = update plugins and write the new versions to lazy-lock.json (commit it if you keep them)
   require_cmd nvim && step "Updating Neovim plugins" nvim --headless "+Lazy! sync" +qa
   require_cmd tldr && step "Updating tldr pages" tldr --update
+  # Picks up aoe's newer base image (and the Claude Code it ships) for new sandboxes
+  [[ -f "$AOE_DIR/config.toml" ]] && aoe_runtime_usable &&
+    step "Rebuilding aoe sandbox image" "$DOTFILES_DIR/scripts/bin/aoe-sandbox-build"
   if [[ -n "$(git -C "$DOTFILES_DIR" status --porcelain -- nvim/.config/nvim/lazy-lock.json)" ]]; then
     log "lazy-lock.json changed; review with: git -C $DOTFILES_DIR diff nvim/.config/nvim/lazy-lock.json"
   fi
