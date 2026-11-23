@@ -29,6 +29,9 @@ context_lines = 3
 split_view = false
 
 [hooks]
+# Install the repo's pinned toolchains before the agent starts, so they're on PATH (shims)
+# inside the sandbox. A failed install mustn't block the session; the agent can retry it.
+on_launch = ["mise install || true"]
 
 [host_hooks]
 
