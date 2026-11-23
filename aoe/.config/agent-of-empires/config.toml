@@ -60,9 +60,10 @@ environment = [
     "NO_COLOR",
 ]
 extra_volumes = []
-# Shared across sessions so each one doesn't reinstall the same toolchains. Not in
-# extra_volumes: a profile's list replaces the global one, and the installer manages those.
-extra_run_args = ["-v", "aoe-mise:/opt/mise"]
+# Toolchain cache shared by every session. Overlay (:O): sessions read it but their writes are
+# discarded, so one session can't tamper with what later ones run; aoe-sandbox-warm adds to it.
+# Not in extra_volumes: a profile's list replaces the global one.
+extra_run_args = ["-v", "aoe-mise:/opt/mise:O"]
 mount_ssh = false
 privileged = false
 selinux_relabel = false

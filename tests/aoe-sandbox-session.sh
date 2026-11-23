@@ -12,6 +12,7 @@ worktrees="$repo-worktrees"
 container=""
 runtime=$(sed -n 's/^container_runtime = "\(.*\)"/\1/p' "$HOME/.config/agent-of-empires/config.toml")
 runtime=${runtime:-docker}
+warm="$(cd "$(dirname "$0")/.." && pwd)/scripts/bin/aoe-sandbox-warm"
 
 check() { # check name condition...
   local name="$1"
@@ -34,6 +35,13 @@ git -C "$repo" init -q -b main
 printf '[toolchain]\nchannel = "1.99.1"\n' >"$repo/rust-toolchain.toml"
 git -C "$repo" add . && git -C "$repo" -c commit.gpgsign=false commit -qm init
 
+# Drop the pinned toolchain from the shared cache so the warm check can't pass on a leftover
+mise_volume=$("$runtime" volume inspect aoe-mise --format '{{.Mountpoint}}' 2>/dev/null)
+[[ -n "$mise_volume" ]] && rm -rf "$mise_volume"/rustup/toolchains/1.99.1-* "$mise_volume/installs/rust"
+"$warm" "$repo" >/dev/null 2>&1
+mise_volume=$("$runtime" volume inspect aoe-mise --format '{{.Mountpoint}}' 2>/dev/null)
+check warm-caches-repo-toolchain bash -c 'compgen -G "$1/rustup/toolchains/1.99.1-*" >/dev/null' _ "${mise_volume:-/nonexistent}"
+
 (cd "$HOME" && aoe add "$repo" -w test -b -s -t "$title" -l --no-submodules >/dev/null 2>&1) || {
   echo "FAIL session-created"
   exit 1
@@ -51,8 +59,10 @@ for _ in $(seq 60); do
 done
 
 check cargo-on-path-pinned grep -q 'cargo 1\.99\.1' <<<"$(in_container 'cargo --version')"
-mise_volume=$("$runtime" volume inspect aoe-mise --format '{{.Mountpoint}}' 2>/dev/null)
-check toolchain-in-shared-volume bash -c 'compgen -G "$1/rustup/toolchains/1.99.1-*" >/dev/null' _ "${mise_volume:-/nonexistent}"
+
+in_container "touch /opt/mise/planted-$$" >/dev/null
+check session-writes-to-cache-discarded test ! -e "${mise_volume:-/nonexistent}/planted-$$"
+check warm-refuses-while-sandbox-runs bash -c '! "$1" "$2" >/dev/null 2>&1' _ "$warm" "$repo"
 
 in_container 'echo x >f.txt && git add f.txt && git -c commit.gpgsign=false commit -qm probe' >/dev/null
 check container-writes-owned-by-user test -z "$(find "$repo" "$worktrees" -not -user "$(id -u)" -print -quit)"
