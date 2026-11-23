@@ -64,6 +64,8 @@ APT_PACKAGES=(
   build-essential curl git wget unzip stow
   zsh ripgrep fd-find bat
   chafa htop ncdu
+  # rootless runtime for aoe sandboxes: container root maps to you, so repo files stay yours
+  podman uidmap
 )
 $DESKTOP && APT_PACKAGES+=(fontconfig)
 

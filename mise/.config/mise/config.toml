@@ -31,3 +31,8 @@ dust       = "latest"
 tealdeer   = "latest"
 jq         = "latest"
 shellcheck = "latest"
+
+[settings]
+# A repo's own version file must beat the defaults above. go is left out: go.mod's `go`
+# line is a minimum, and Go switches toolchains itself when a repo needs a newer one.
+idiomatic_version_file_enable_tools = ["rust", "node", "python", "ruby", "java", "dotnet"]
