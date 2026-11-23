@@ -68,6 +68,8 @@ step "agent session setup tests"
 bash tests/agent-sessions.sh || fail "agent-sessions tests"
 step "aoe sandbox setup tests"
 bash tests/aoe-sandbox-setup.sh || fail "aoe-sandbox-setup tests"
+step "aoe bootstrap tests"
+bash tests/aoe-bootstrap.sh || fail "aoe-bootstrap tests"
 step "git guard tests"
 bash tests/git-guard.sh || fail "git-guard tests"
 
