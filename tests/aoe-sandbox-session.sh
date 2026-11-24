@@ -22,6 +22,7 @@ check() { # check name condition...
   if "$@"; then echo "PASS $name"; else echo "FAIL $name"; failed=1; fi
 }
 not() { ! "$@"; }
+quiet() { "$@" >/dev/null; }
 # run_in <container> <script>: run in the session's worktree
 run_in() { "$runtime" exec -w "$("$runtime" inspect "$1" --format '{{.Config.WorkingDir}}')" "$1" bash -c "$2" 2>&1; }
 
@@ -67,14 +68,29 @@ bootstrapped_ok() {
 }
 both_bootstrapped_ok() { bootstrapped_ok "$1" && bootstrapped_ok "$2"; }
 
-# True when no mount covers /var/cache/aoe, so package caches stay inside the container
+# True when no mount covers /var/cache/aoe, so package caches stay inside the container. A
+# session always has mounts (the worktree, /opt/mise), so an empty list means inspect failed.
 caches_not_on_host() {
-  local d
+  local d mounts
+  mounts=$("$runtime" inspect "$1" --format '{{range .Mounts}}{{println .Destination}}{{end}}') &&
+    [[ -n "${mounts//[[:space:]]/}" ]] || return 1
   while IFS= read -r d; do
     [[ -n "$d" ]] || continue
     [[ "$d" == / || /var/cache/aoe == "$d" || /var/cache/aoe == "$d"/* ]] && return 1
-  done < <("$runtime" inspect "$1" --format '{{range .Mounts}}{{println .Destination}}{{end}}')
+  done <<<"$mounts"
   return 0
+}
+
+gen_of() {
+  local g
+  g=$("$runtime" exec "$1" cat /opt/mise/.generation 2>/dev/null) && [[ $g =~ ^[0-9]+$ ]] && echo "$g"
+}
+
+# The touch has to succeed first, or a failed exec would pass for a discarded write
+planted_discarded() { # planted_discarded <container> <gen>
+  [[ $2 =~ ^[0-9]+$ ]] &&
+    "$runtime" exec "$1" touch "/opt/mise/planted-$$" &&
+    test ! -e "$mise_dir/gen-$2/planted-$$" -a ! -e "$mise_dir/current/planted-$$"
 }
 
 git -C "$repo" init -q -b main
@@ -152,20 +168,19 @@ wait_bootstrapped "$c1"
 wait_bootstrapped "$c2"
 
 check bootstrap-deps-installed test -e "$wt1/node_modules/is-number/package.json"
-check bootstrap-go-work-downloaded test -n "$(run_in "$c1" \
-  'm=$(go env GOMODCACHE) && [[ $m == /var/cache/aoe/* ]] && ls -A "$m/github.com/google"')"
+check bootstrap-go-work-downloaded quiet run_in "$c1" \
+  'm=$(go env GOMODCACHE) && [[ $m == /var/cache/aoe/* ]] && [ -n "$(ls -A "$m/github.com/google/uuid@v1.6.0")" ]'
 bad=$(run_in "$c1" 'git -c commit.gpgsign=false commit -q --allow-empty -m bad') &&
   bad_rc=0 || bad_rc=$?
 check hook-rejects-commit-in-sandbox test "$bad_rc" -ne 0 -a -n "$(grep ok-prefix <<<"$bad")"
 check caches-not-on-host caches_not_on_host "$c1"
 check parallel-sessions-bootstrap both_bootstrapped_ok "$c1" "$c2"
 
-gen=$(run_in "$c1" 'cat /opt/mise/.generation')
-run_in "$c1" "touch /opt/mise/planted-$$" >/dev/null
-check session-writes-to-cache-discarded test ! -e "$mise_dir/gen-$gen/planted-$$" -a ! -e "$mise_dir/current/planted-$$"
+gen=$(gen_of "$c1")
+check session-writes-to-cache-discarded planted_discarded "$c1" "$gen"
 
 check warm-while-running bash -c '"$1" node@24.22.3 >/dev/null 2>&1' _ "$warm"
-check running-session-keeps-gen test "$(run_in "$c1" 'cat /opt/mise/.generation')" = "$gen"
+check running-session-keeps-gen test -n "$gen" -a "$(gen_of "$c1")" = "$gen"
 
 titles+=("aoe-test-$$-3")
 add "aoe-test-$$-3" test3 || {
@@ -173,8 +188,8 @@ add "aoe-test-$$-3" test3 || {
   exit 1
 }
 new_gen=$(cat "$mise_dir/current/.generation")
-check new-session-gets-new-gen test "$new_gen" -gt "$gen" -a \
-  "$(run_in "$(container_of "aoe-test-$$-3")" 'cat /opt/mise/.generation')" = "$new_gen"
+check new-session-gets-new-gen bash -c '[[ $1 =~ ^[0-9]+$ && $2 =~ ^[0-9]+$ && $1 -gt $2 && $3 == "$1" ]]' _ \
+  "$new_gen" "$gen" "$(gen_of "$(container_of "aoe-test-$$-3")")"
 
 run_in "$c1" 'echo x >f.txt && git add f.txt && git -c commit.gpgsign=false commit -qm "ok probe"' >/dev/null
 check container-writes-owned-by-user test -z "$(find "$repo" "$worktrees" -not -user "$(id -u)" -print -quit)"
