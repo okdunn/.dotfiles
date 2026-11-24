@@ -30,8 +30,9 @@ split_view = false
 
 [hooks]
 # One script rather than inline commands: it's baked into the image, logs each step, and always
-# exits 0 so a failed step never blocks the session.
-on_launch = ["aoe-bootstrap"]
+# exits 0 so a failed step never blocks the session. The guard covers an image that predates the
+# script (stale after a pull, or rolled back to :previous), where the bare call would exit 127.
+on_launch = ["if command -v aoe-bootstrap >/dev/null; then aoe-bootstrap; else echo 'aoe-bootstrap missing: run aoe-sandbox-build'; fi"]
 
 [host_hooks]
 

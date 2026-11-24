@@ -239,7 +239,7 @@ in_container() { [[ -f /.dockerenv || -f /run/.containerenv ]]; }
 aoe_runtime_usable() { ! in_container && "$(aoe_runtime)" info &>/dev/null; }
 aoe_bootstrap_sha() { sha256sum "$DOTFILES_DIR/aoe/.config/agent-of-empires/sandbox/aoe-bootstrap" | cut -d' ' -f1; }
 aoe_image_bootstrap_sha() {
-  "$(aoe_runtime)" image inspect "$(aoe_image)" --format '{{index .Labels "dotfiles.bootstrap-sha256"}}' 2>/dev/null
+  "$(aoe_runtime)" image inspect "$(aoe_image)" --format '{{index .Config.Labels "dotfiles.bootstrap-sha256"}}' 2>/dev/null
 }
 aoe_image_present() { "$(aoe_runtime)" image inspect "$(aoe_image)" &>/dev/null; }
 
