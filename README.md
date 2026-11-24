@@ -104,7 +104,8 @@ for aoe's newer base image. When a session starts, the `on_launch` hook runs `ao
 (baked into the image; `dot doctor` flags an image built from an older copy) inside it. It
 installs the repo's pinned toolchains (`mise.toml`, `rust-toolchain.toml`, `.nvmrc`, …) so they're
 on PATH, then the dependencies at the repo root and in `go.work`/workspace members, then the
-husky, lefthook or pre-commit hooks. Each step is limited to 900 s (`AOE_BOOTSTRAP_TIMEOUT`),
+husky, lefthook or pre-commit hooks. Each step is limited to 900 s (`AOE_BOOTSTRAP_TIMEOUT` when you run it by hand;
+sessions use the default),
 the agent waits for the script, and its log is `/tmp/aoe-bootstrap.log` in the container.
 Package caches sit on the container's own filesystem (`/var/cache/aoe`), not a host mount.
 Toolchains come from a cache shared by all sessions (`~/.local/share/aoe-mise`), mounted as an
@@ -115,7 +116,8 @@ what the next one runs. That also means a session's own installs aren't kept: ad
 (`gen-1`, `gen-2`, …) with `current` pointing at the newest: a warm installs into a copy of
 `current` and switches it once the install succeeds, so it can run while sessions do. Each
 session keeps the generation it started with; new ones get the new one, and the warm deletes
-generations no running sandbox uses. The installer runs `aoe-sandbox-warm --init` to create
+generations no running sandbox uses. The installer runs `aoe-sandbox-warm --init` (so does
+`dot update`, after relinking the mount) to create
 `gen-1`, moving in the old `aoe-mise` volume if there is one; the mount itself goes in each aoe
 profile's config, next to the git identity mount.
 The container can write the repo, including the main checkout's `.git`, so the git guard
@@ -132,11 +134,13 @@ drivers, per-command pagers and git 2.54+ config hooks (`hook.*`), and anything 
 (`pnpm test`, `just check`) after a session. Review a session's diff before running its code.
 `tests/aoe-sandbox-session.sh` (a real sandboxed worktree session) and
 `tests/mise-repo-versions.sh` need the network and take minutes, so `dot check` doesn't run them.
+`tests/aoe-sandbox-session.sh` warms its fixture toolchains into the real `~/.local/share/aoe-mise` cache.
 A session that won't start with `preparing isolated .claude configuration` (debug.log:
 `opening anchored directory component`) has files in its agent store `~/.claude/sandbox-v2/<id>`
 that you don't own, left by sandboxes from before the switch to rootless Podman. aoe hides the
 `EACCES`, and deleting such a session reports success but leaves the store and its worktree
-(`<repo>-worktrees/.aoe-trash/<id>`). Fix with `sudo chown -R "$USER": ~/.claude/sandbox-v2`, then
+(`<repo>-worktrees/.aoe-trash/<id>`). Fix with `sudo chown -R "$USER": ~/.claude/sandbox-v2` (and the affected `<repo>-worktrees`, where
+leftover trashed worktrees hold root-owned files too), then
 `aoe sandbox reclaim` lists stores of deleted sessions (`--delete` removes them).
 
 Per-machine overrides go in untracked `~/.zshrc.local` and `~/.gitconfig.local`.
@@ -159,7 +163,7 @@ Tool versions are `latest` in mise with no lockfile, so a fresh machine gets cur
 and `dot update` moves existing ones forward, except aoe, which is pinned. Pin a tool in
 `mise/.config/mise/config.toml` if a release breaks something.
 
-To upgrade aoe, bump its pin there, run `bash tests/aoe-sandbox-session.sh`, then commit; `dot check`
+To upgrade aoe, bump its pin there, run `bash tests/aoe-sandbox-session.sh`, then commit; `dot doctor`
 fails while the installed version differs from the pin. `aoe-sandbox-build` keeps the image it
 replaces as `aoe-sandbox-dotfiles:previous`; roll back with
 `podman tag aoe-sandbox-dotfiles:previous aoe-sandbox-dotfiles:latest`.
