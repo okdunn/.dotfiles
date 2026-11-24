@@ -1,8 +1,10 @@
 # Dotfiles
 
-Debian/Ubuntu only. Managed with GNU Stow; tools via apt + [mise](https://mise.jdx.dev).
+My shell, editor and terminal setup for Debian and Ubuntu, plus a sandboxed setup for running
+several Claude Code agents in parallel. Files are linked into place with GNU Stow; tools come
+from apt and [mise](https://mise.jdx.dev).
 
-## Installation
+## Install
 
 ```
 [ -d ~/.dotfiles ] || git clone https://github.com/okdunn/.dotfiles.git ~/.dotfiles; cd ~/.dotfiles && bash install.sh
@@ -10,18 +12,24 @@ Debian/Ubuntu only. Managed with GNU Stow; tools via apt + [mise](https://mise.j
 
 Options:
 
-- `--stow-only` — only (re)link dotfiles, skip package/tool installs
-- `--desktop` — also install JetBrains Mono Nerd Font and stow the wezterm config (skip on headless servers)
-- `--langs` — also install language toolchains: go, rust, java, dotnet, ruby, lua (`mise-langs` package).
-  Neovim turns on the matching LazyVim language extras automatically.
-- `--reset` — forget the saved `--desktop`/`--langs` choice
+| Flag | What it does |
+|------|--------------|
+| `--stow-only` | Only (re)link the dotfiles; skip installing packages and tools |
+| `--desktop` | Also install JetBrains Mono Nerd Font and the WezTerm config (skip on headless servers) |
+| `--langs` | Also install go, rust, java, dotnet, ruby and lua. Neovim turns on the matching LazyVim language extras |
+| `--reset` | Forget the saved `--desktop` / `--langs` choice |
 
-`--desktop`/`--langs` are saved to `~/.config/dotfiles/profile`; later runs that pass neither
-(including `--stow-only` and `dot update`) reuse them. Passing either replaces the saved set.
+`--desktop` and `--langs` are remembered in `~/.config/dotfiles/profile`, so later runs
+(including `--stow-only` and `dot update`) reuse them. Passing either flag replaces the saved set.
 
-### Mac/Windows WezTerm install
+The installer asks for your git name and email whenever they're missing. Run `git-identity` to
+set or change them later; it also offers SSH commit signing when `~/.ssh/id_ed25519.pub` exists.
+To create a new SSH key, run `./init-key.sh`.
 
-The same WezTerm config (Catppuccin Mocha on OLED black) for macOS and Windows, no clone needed:
+### WezTerm on macOS and Windows
+
+The same WezTerm config, without cloning the repo. Install WezTerm first from
+[wezterm.org](https://wezterm.org/installation.html); these scripts don't.
 
 ```
 # macOS (needs Homebrew)
@@ -33,135 +41,206 @@ curl -fsSL https://raw.githubusercontent.com/okdunn/.dotfiles/main/install/wezte
 irm https://raw.githubusercontent.com/okdunn/.dotfiles/main/install/wezterm-windows.ps1 | iex
 ```
 
-Install WezTerm itself first from [wezterm.org](https://wezterm.org/installation.html); the scripts don't
-install it. Each installs JetBrains Mono Nerd Font if it's missing (and warns if WezTerm is), then writes the config
-to the file WezTerm will load: an existing `$WEZTERM_CONFIG_FILE` or `~/.config/wezterm/wezterm.lua`
-if there is one, otherwise `~/.config/wezterm/wezterm.lua` on macOS and `%USERPROFILE%\.wezterm.lua`
-on Windows. A different
-existing config is backed up to `*.bak-<timestamp>` first. Rerun to pick up config changes. The
-scripts fetch from GitHub, so push changes to `wezterm.lua` before rerunning them.
+Each script installs JetBrains Mono Nerd Font if it's missing, then writes the config to the
+file WezTerm loads: `$WEZTERM_CONFIG_FILE` or `~/.config/wezterm/wezterm.lua` if either exists,
+otherwise `~/.config/wezterm/wezterm.lua` on macOS and `%USERPROFILE%\.wezterm.lua` on Windows.
+An existing, different config is backed up to `*.bak-<timestamp>` first. The scripts download
+from GitHub, so push changes to `wezterm.lua` before rerunning them.
 
-## Day to day: `dot`
+## Everyday use: `dot`
 
-- `dot update` — pull the repo, relink, `mise self-update` + `mise upgrade`, update antidote,
-  tmux and Neovim plugins (`Lazy sync` rewrites `lazy-lock.json`; commit it to keep the bump),
-  refresh tldr pages, rebuild the aoe sandbox image. A failing step warns and the rest still run.
-- `dot doctor` — check this machine: zsh starts cleanly, tools are on PATH, every package is
-  linked with no stow conflicts, tmux plugins, bat/btop themes, Claude settings, git identity, tldr,
-  aoe sandboxes (rootless Podman works, image built).
-- `dot check` — lint the repo (shellcheck, `bash -n`/`zsh -n`, stylua). `dot check --cleanroom`
-  also runs the Docker install test on Ubuntu 24.04 and Debian 12. Nothing enforces this;
-  there is no hosted CI, so run it before pushing.
-- `dot edit` / `dot dir` — open the repo in `$EDITOR` / print its path.
+- **`dot update`** pulls the repo and relinks it, then updates mise and its tools, antidote, the
+  tmux and Neovim plugins, and the tldr pages, and rebuilds the aoe sandbox image. A failing step
+  warns and the rest still run. Neovim's `Lazy sync` rewrites `lazy-lock.json`; commit it to keep
+  the update.
+- **`dot doctor`** checks this machine: zsh starts cleanly, tools are on PATH, every package is
+  linked without conflicts, themes and Claude settings are in place, git identity, tldr, and the
+  aoe sandboxes.
+- **`dot check`** lints the repo (shellcheck, `bash -n` / `zsh -n`, stylua).
+  `dot check --cleanroom` also runs a fresh install in Docker on Ubuntu 24.04 and Debian 12.
+  There's no hosted CI, so run it before pushing.
+- **`dot edit`** opens the repo in `$EDITOR`; **`dot dir`** prints its path.
 
-Theme: Catppuccin Mocha on true black (OLED) everywhere — only the base is `#000000`;
-catppuccin's own surfaces (`#313244`/`#45475a`/`#585b70`) and pastel accents are used for
-selections, cursor lines and highlights. nvim, tmux, p10k, fzf, lazygit, bat/delta, git, eza/ls (vivid),
-zsh syntax highlighting, btop, atuin and wezterm all share it.
+## Look and keys
 
-Handy keys: `Ctrl-F` project picker (`tp`), `Ctrl-T` fuzzy file, `Alt-C` fuzzy cd,
-`Ctrl-R` history (atuin), `Tab` fuzzy completion (fzf-tab), `f` after a failed command (pay-respects).
+Everything uses Catppuccin Mocha on true black for OLED screens: only the background is
+`#000000`, and Catppuccin's own surface and accent colours are kept for selections, cursor lines
+and highlights. That covers nvim, tmux, p10k, fzf, lazygit, bat and delta, git, eza and ls
+(vivid), zsh syntax highlighting, btop, atuin and WezTerm.
 
-tmux (prefix `Ctrl-Space`): `f` project picker popup, `r` reload config, `|`/`-` split,
-`[` copy mode with vi keys — `v` select, `Ctrl-V` block, `y` copy to the system clipboard (OSC 52,
-works over SSH).
+| Keys | Action |
+|------|--------|
+| `Ctrl-F` | Project picker (`tp`) |
+| `Ctrl-T` | Fuzzy-find a file |
+| `Alt-C` | Fuzzy `cd` |
+| `Ctrl-R` | Shell history (atuin) |
+| `Tab` | Fuzzy completion (fzf-tab) |
+| `f` | Fix the last failed command (pay-respects) |
 
-git aliases: `git lg` (graph log), `git st`, `git fixup <sha>` (then `git rebase -i` squashes it
-automatically), `git amend`, `git undo` (uncommit, keep changes). Global ignores live in
-`~/.config/git/ignore`. `git-identity` also offers SSH commit signing when `~/.ssh/id_ed25519.pub` exists.
+tmux uses `Ctrl-Space` as its prefix. Then: `f` project picker popup, `r` reload config, `|` and
+`-` split, `[` copy mode with vi keys (`v` select, `Ctrl-V` block select, `y` copy to the system
+clipboard, which also works over SSH).
 
-Claude Code: `~/.claude/CLAUDE.md` (global instructions) is stowed from `claude/`.
-`~/.claude/settings.json` is *merged*, not linked, because Claude Code rewrites it itself:
-the installer enforces only the keys in `install/claude-settings.json` (no commit/PR attribution)
-and keeps everything else on the machine.
-It also guards atuin's Claude hook (`command -v atuin && ...`) so Agent of Empires sandboxes,
-which share that file but don't have atuin, don't error on every Bash call, and adds a read-only
-`~/.gitconfig.local` mount to each aoe profile's untracked config
-(`~/.config/agent-of-empires/profiles/<name>/config.toml`) so sandboxed sessions commit as you.
-A profile's `extra_volumes` replaces the global one, so put extra mounts there too.
-`CLAUDE.md` tells agents in an aoe session to rename the session branch to `<type>/<slug>`
-before their first commit. Commit signing doesn't work inside sandboxes (the key
-is a host path); `dot doctor` warns when it's on.
+Git aliases: `git lg` (graph log), `git st`, `git fixup <sha>` (a later `git rebase -i` squashes it
+automatically), `git amend`, and `git undo` (uncommit but keep the changes). Global ignores are in
+`~/.config/git/ignore`.
 
-Agent of Empires (`aoe`): a TUI that runs Claude Code sessions in parallel, each in its own
-tmux session (optionally its own git worktree), with status detection and a diff viewer.
-`aoe` opens it; `n` new session, `Enter` attach, `Alt-g` lazygit in the session's dir, `?` help.
-Back to the list: `Ctrl-Space L` when aoe runs inside tmux (attaching switches your client),
-`Ctrl-Space d` outside it. Agents keep running either way.
-`aoe add . -w feat/x -b` starts Claude on a new branch in `../<repo>-worktrees/feat-x`.
-Config is `aoe/.config/agent-of-empires/config.toml` (Claude by default, Mocha OLED theme);
-the settings screen (`s`) writes through to it, so commit what you change there. mise
-installs and upgrades it, so aoe's own update check is off. The first session asks once to
-install status hooks into `~/.claude/settings.json`; accept, the settings merge keeps them.
+## Machine-specific settings
 
-aoe sandboxes (on by default) run each session in a rootless Podman container, so files an
-agent writes into the repo stay owned by you; Docker is left alone for your own containers.
-The image is aoe's base plus mise (`aoe/.config/agent-of-empires/sandbox/Dockerfile`), built
-locally by `aoe-sandbox-build`; the installer builds it when missing and `dot update` rebuilds it
-for aoe's newer base image. When a session starts, the `on_launch` hook runs `aoe-bootstrap`
-(baked into the image; `dot doctor` flags an image built from an older copy) inside it. It
-installs the repo's pinned toolchains (`mise.toml`, `rust-toolchain.toml`, `.nvmrc`, …) so they're
-on PATH, then the dependencies at the repo root and in `go.work`/workspace members, then the
-husky, lefthook or pre-commit hooks. Each step is limited to 900 s (`AOE_BOOTSTRAP_TIMEOUT` when you run it by hand;
-sessions use the default),
-the agent waits for the script, and its log is `/tmp/aoe-bootstrap.log` in the container.
-Package caches sit on the container's own filesystem (`/var/cache/aoe`), not a host mount.
-Toolchains come from a cache shared by all sessions (`~/.local/share/aoe-mise`), mounted as an
-overlay: sessions read it, but what they write is discarded, so one session can't tamper with
-what the next one runs. That also means a session's own installs aren't kept: add them with
-`aoe-sandbox-warm <repo-dir | tool@version>...` (it reads a repo's version files and its
-`mise.toml` `[tools]`, never its other mise config). The cache is kept in generations
-(`gen-1`, `gen-2`, …) with `current` pointing at the newest: a warm installs into a copy of
-`current` and switches it once the install succeeds, so it can run while sessions do. Each
-session keeps the generation it started with; new ones get the new one, and the warm deletes
-generations no running sandbox uses. The installer runs `aoe-sandbox-warm --init` (so does
-`dot update`, after relinking the mount) to create
-`gen-1`, moving in the old `aoe-mise` volume if there is one; the mount itself goes in each aoe
-profile's config, next to the git identity mount.
-The container can write the repo, including the main checkout's `.git`, so the git guard
-(`zsh/.config/zsh/git-guard.zsh`) pins the settings that would make git on the host run
-something a sandbox planted: hooks, `core.fsmonitor`, pager, editor, ssh command, credential
-helpers. Hooks still run inside sandboxes: `.git/hooks` is shared by every worktree, and for repos
-that use husky, lefthook or pre-commit, `aoe-bootstrap` installs their generated hooks in each new
-worktree (they're not committed, and pnpm's `ignoreScripts` skips husky's `prepare`), which also
-sets husky's `core.hooksPath` relative. An absolute `core.hooksPath` doesn't exist in the
-container, so git skips those hooks silently.
-On the host, run one command with the repo's own hooks via `githooks <git args>` once you've
-checked them. Not covered: filter/diff/merge
-drivers, per-command pagers and git 2.54+ config hooks (`hook.*`), and anything you run yourself
-(`pnpm test`, `just check`) after a session. Review a session's diff before running its code.
-`tests/aoe-sandbox-session.sh` (a real sandboxed worktree session) and
-`tests/mise-repo-versions.sh` need the network and take minutes, so `dot check` doesn't run them.
-`tests/aoe-sandbox-session.sh` warms its fixture toolchains into the real `~/.local/share/aoe-mise` cache.
-A session that won't start with `preparing isolated .claude configuration` (debug.log:
-`opening anchored directory component`) has files in its agent store `~/.claude/sandbox-v2/<id>`
-that you don't own, left by sandboxes from before the switch to rootless Podman. aoe hides the
-`EACCES`, and deleting such a session reports success but leaves the store and its worktree
-(`<repo>-worktrees/.aoe-trash/<id>`). Fix with `sudo chown -R "$USER": ~/.claude/sandbox-v2` (and the affected `<repo>-worktrees`, where
-leftover trashed worktrees hold root-owned files too), then
-`aoe sandbox reclaim` lists stores of deleted sessions (`--delete` removes them).
+Nothing machine-specific belongs in this repo. Put it in these untracked files instead:
 
-Per-machine overrides go in untracked `~/.zshrc.local` and `~/.gitconfig.local`.
-Per-project/tool shell config (PATHs, env vars) goes in untracked `~/.zshrc.d/<name>.zsh`,
-one file each (the installer creates the folder). `~/.zshrc` is a link into this repo, so an
-installer that appends to it is editing the repo: `dot doctor` warns, and the lines belong in `~/.zshrc.d/`.
-The installer asks for your git name/email whenever they're missing (on every run,
-including `--stow-only`); run `git-identity` any time to set or change them.
+- `~/.zshrc.local` and `~/.gitconfig.local` for per-machine overrides.
+- `~/.zshrc.d/<name>.zsh` for one project's or tool's shell setup (PATH entries, environment
+  variables), one file each. The installer creates the folder.
 
-New SSH key: `./init-key.sh`
+`~/.zshrc` is a link into this repo, so a tool's installer that appends to it is editing the repo.
+`dot doctor` warns when that happens; move those lines into `~/.zshrc.d/`.
 
-Test a fresh install in Docker (`dot check --cleanroom` runs this on Ubuntu 24.04 and Debian 12;
-pass install flags after the script, e.g. `... cleanroom.sh --langs`):
+## Claude Code
+
+- `~/.claude/CLAUDE.md`, the global instructions, is linked from `claude/`. Among other things it
+  tells agents in an aoe session to rename the session's branch to `<type>/<slug>` before their
+  first commit.
+- `~/.claude/settings.json` is merged rather than linked, because Claude Code rewrites it itself.
+  The installer enforces only the keys in `install/claude-settings.json` (no attribution in
+  commits or PRs) and leaves the rest alone. It also makes atuin's Claude hook skip itself when
+  atuin isn't installed, so aoe sandboxes, which share the file, don't print an error on every
+  command.
+
+## Agent of Empires (aoe)
+
+aoe is a terminal UI that runs several Claude Code sessions in parallel. Each session gets its own
+tmux session, optionally its own git worktree, and a sandbox container. aoe shows each session's
+status and has a diff viewer.
+
+### Using it
+
+- `aoe` opens it. `n` starts a new session, `Enter` attaches, `Alt-g` opens lazygit in the
+  session's folder, `?` shows help.
+- To get back to the list: `Ctrl-Space L` when aoe runs inside tmux, `Ctrl-Space d` outside it.
+  Agents keep running either way.
+- `aoe add . -w feat/x -b` starts Claude on a new branch in `../<repo>-worktrees/feat-x`.
+- The config is `aoe/.config/agent-of-empires/config.toml`. The settings screen (`s`) writes
+  straight into it, so commit what you change there.
+- The first session asks to install status hooks into `~/.claude/settings.json`. Accept; the
+  settings merge keeps them.
+- mise installs and updates aoe, so aoe's own update check is off.
+
+### Sandboxes
+
+Each session runs in a rootless Podman container, so files an agent writes into the repo stay
+owned by you. Docker is left alone for your own containers.
+
+The image is aoe's base image plus mise, defined in
+`aoe/.config/agent-of-empires/sandbox/Dockerfile` and built locally by `aoe-sandbox-build`. The
+installer builds it when it's missing, and `dot update` rebuilds it when aoe's base image changes.
+
+Sessions commit as you: the installer mounts `~/.gitconfig.local` read-only into each aoe
+profile's own config (`~/.config/agent-of-empires/profiles/<name>/config.toml`, untracked). A
+profile's `extra_volumes` replaces the global list, so any extra mounts go in the profile too.
+Commit signing doesn't work inside sandboxes, because the key is a path on the host; `dot doctor`
+warns when it's on.
+
+### Session setup
+
+Before the agent starts, each new session runs `aoe-bootstrap` inside its container, in this order:
+
+1. **Toolchains:** installs the versions the repo pins (`mise.toml`, `rust-toolchain.toml`,
+   `.nvmrc`, …).
+2. **Dependencies:** installs from the lockfiles at the repo root and in its workspaces
+   (`go.work`, pnpm/npm/yarn/Cargo workspaces). Lockfiles are never rewritten.
+3. **Git hooks:** installs husky, lefthook or pre-commit hooks if the repo uses them.
+
+The agent waits for this. Each step stops after 900 seconds (set `AOE_BOOTSTRAP_TIMEOUT` when you
+run the script by hand), and a failed or slow step is logged without blocking the session. The
+log is `/tmp/aoe-bootstrap.log` inside the container. Package caches live inside each container
+(`/var/cache/aoe`), not on the host.
+
+The script is built into the image; `dot doctor` tells you when the image has an older copy and
+needs `aoe-sandbox-build`.
+
+### Shared toolchain cache
+
+Installed toolchains are cached in `~/.local/share/aoe-mise` and shared by all sessions. Each
+session sees the cache through an overlay: it can read everything, but whatever it writes is
+thrown away when it stops, so one session can't tamper with tools the next one runs. That also
+means a session's own installs don't stick. To add tools to the cache, run:
 
 ```
-docker run --rm -v "$PWD:/src:ro" ubuntu:24.04 bash /src/tests/cleanroom.sh
+aoe-sandbox-warm <repo-dir | tool@version>...
 ```
 
-Tool versions are `latest` in mise with no lockfile, so a fresh machine gets current releases
-and `dot update` moves existing ones forward, except aoe, which is pinned. Pin a tool in
-`mise/.config/mise/config.toml` if a release breaks something.
+Given a repo, it reads the repo's version files and the `[tools]` section of its `mise.toml`.
 
-To upgrade aoe, bump its pin there, run `bash tests/aoe-sandbox-session.sh`, then commit; `dot doctor`
-fails while the installed version differs from the pin. `aoe-sandbox-build` keeps the image it
-replaces as `aoe-sandbox-dotfiles:previous`; roll back with
-`podman tag aoe-sandbox-dotfiles:previous aoe-sandbox-dotfiles:latest`.
+You can warm the cache while sessions are running. The cache is kept as numbered generations
+(`gen-1`, `gen-2`, …) with `current` pointing at the newest. A warm copies `current`, installs
+into the copy, and switches `current` only if the install worked. Running sessions keep the
+generation they started with, new sessions get the newest, and generations no running session
+uses are deleted.
+
+The installer and `dot update` create the cache with `aoe-sandbox-warm --init` and add its mount
+to each aoe profile's config.
+
+### Git safety
+
+A sandbox can write to the repo, including the main checkout's `.git`. So the git guard
+(`zsh/.config/zsh/git-guard.zsh`) pins the git settings a sandbox could use to make git on the
+host run its code: hooks, `core.fsmonitor`, the pager, the editor, the ssh command and credential
+helpers.
+
+Hooks do still run inside sandboxes. `.git/hooks` is shared by every worktree, and
+`aoe-bootstrap` installs husky, lefthook or pre-commit hooks in each new worktree, because they
+aren't committed and pnpm's `ignoreScripts` skips husky's own install. Hooks configured with an
+absolute `core.hooksPath` don't exist inside the container, so git skips them without a warning.
+
+On the host, once you've checked a repo's hooks, run a single git command with them using
+`githooks <git args>`.
+
+The guard doesn't cover git's filter, diff and merge drivers, per-command pagers, git 2.54+ config
+hooks (`hook.*`), or anything you run yourself after a session (`pnpm test`, `just check`, …).
+Review a session's diff before running its code.
+
+### When a session won't start
+
+If a session fails with `preparing isolated .claude configuration` (and aoe's `debug.log` says
+`opening anchored directory component`), its folder in `~/.claude/sandbox-v2/<id>` contains files
+you don't own. Sandboxes from before the switch to rootless Podman left them behind. aoe hides the
+permission error, and deleting such a session reports success but leaves its folder and worktree
+(`<repo>-worktrees/.aoe-trash/<id>`) behind.
+
+To fix it, run `sudo chown -R "$USER": ~/.claude/sandbox-v2`, and the same for any affected
+`<repo>-worktrees` folder. Then `aoe sandbox reclaim` lists folders of deleted sessions, and
+`aoe sandbox reclaim --delete` removes them.
+
+### Upgrading and rolling back
+
+aoe is pinned in `mise/.config/mise/config.toml`. To upgrade, bump the pin, run
+`bash tests/aoe-sandbox-session.sh`, then commit. `dot doctor` fails while the installed version
+differs from the pin.
+
+`aoe-sandbox-build` keeps the image it replaces as `aoe-sandbox-dotfiles:previous`. To roll back:
+
+```
+podman tag aoe-sandbox-dotfiles:previous aoe-sandbox-dotfiles:latest
+```
+
+## Tool versions
+
+Every tool except aoe uses `latest` in mise with no lockfile, so a fresh machine gets current
+releases and `dot update` moves existing machines forward. If a release breaks something, pin
+that tool in `mise/.config/mise/config.toml`.
+
+## Tests
+
+`dot check` runs the fast checks. These take minutes and need the network, so run them yourself:
+
+- **A fresh install in Docker.** `dot check --cleanroom` runs it on Ubuntu 24.04 and Debian 12.
+  To run one by hand, adding install flags after the script (for example `--langs`):
+
+  ```
+  docker run --rm -v "$PWD:/src:ro" ubuntu:24.04 bash /src/tests/cleanroom.sh
+  ```
+
+- **`tests/aoe-sandbox-session.sh`** starts real sandboxed sessions. It also warms its test
+  toolchains into the real `~/.local/share/aoe-mise` cache.
+- **`tests/mise-repo-versions.sh`** checks that repo-pinned versions win over the global defaults.
