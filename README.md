@@ -132,6 +132,12 @@ drivers, per-command pagers and git 2.54+ config hooks (`hook.*`), and anything 
 (`pnpm test`, `just check`) after a session. Review a session's diff before running its code.
 `tests/aoe-sandbox-session.sh` (a real sandboxed worktree session) and
 `tests/mise-repo-versions.sh` need the network and take minutes, so `dot check` doesn't run them.
+A session that won't start with `preparing isolated .claude configuration` (debug.log:
+`opening anchored directory component`) has files in its agent store `~/.claude/sandbox-v2/<id>`
+that you don't own, left by sandboxes from before the switch to rootless Podman. aoe hides the
+`EACCES`, and deleting such a session reports success but leaves the store and its worktree
+(`<repo>-worktrees/.aoe-trash/<id>`). Fix with `sudo chown -R "$USER": ~/.claude/sandbox-v2`, then
+`aoe sandbox reclaim` lists stores of deleted sessions (`--delete` removes them).
 
 Per-machine overrides go in untracked `~/.zshrc.local` and `~/.gitconfig.local`.
 Per-project/tool shell config (PATHs, env vars) goes in untracked `~/.zshrc.d/<name>.zsh`,
