@@ -12,7 +12,7 @@ failed=0
 setup() {
   SANDBOX=$(mktemp -d)
   export HOME="$SANDBOX/home" STUB="$SANDBOX/stub"
-  unset XDG_CONFIG_HOME STUB_INFO_FAIL STUB_ROOTLESS
+  unset XDG_CONFIG_HOME STUB_INFO_FAIL STUB_ROOTLESS STUB_BUILD_FAIL STUB_NEW_ID
   export BOOTSTRAP_LABEL=sha-of-ours
   mkdir -p "$HOME" "$STUB" "$SANDBOX/bin"
   AOE_TOML="$HOME/.config/agent-of-empires/config.toml"
@@ -26,11 +26,16 @@ case "$1" in
       dangling-ours) echo "$*" >>"$STUB/calls"; echo "$BOOTSTRAP_LABEL"; exit 0 ;;
       dangling-other) echo "$*" >>"$STUB/calls"; echo; exit 0 ;;
     esac
-    [ -e "$STUB/image" ] || exit 1; [ "$4" != --format ] || cat "$STUB/label" 2>/dev/null ;;
+    [ -e "$STUB/image" ] || exit 1
+    [ "$4" = --format ] || exit 0
+    if [ "$5" = "{{.Id}}" ]; then cat "$STUB/id"; else cat "$STUB/label" 2>/dev/null; fi ;;
   images) echo "$*" >>"$STUB/calls"; cat "$STUB/dangling" 2>/dev/null ;;
   tag) echo "tag $2 $3" >>"$STUB/calls" ;;
   rmi) echo "rmi $2" >>"$STUB/calls" ;;
-  build) echo "build" >>"$STUB/calls"; touch "$STUB/image" "$STUB/built"; echo "$*" >"$STUB/build-args" ;;
+  build)
+    echo "build" >>"$STUB/calls"; echo "$*" >"$STUB/build-args"
+    [ -z "$STUB_BUILD_FAIL" ] || exit 1
+    touch "$STUB/image" "$STUB/built"; echo "${STUB_NEW_ID:-new-id}" >"$STUB/id" ;;
 esac
 EOF
   chmod +x "$SANDBOX/bin/podman"
@@ -72,8 +77,14 @@ check ensure-skips-without-aoe bash -c '! [[ -e "$1/built" ]] && ! grep -q WARN 
 setup; configured; run "$REPO/scripts/bin/aoe-sandbox-build"
 check build-passes-bootstrap-sha grep -q "BOOTSTRAP_SHA256=$BOOTSTRAP_SHA" "$STUB/build-args"
 
-setup; configured; touch "$STUB/image"; run "$REPO/scripts/bin/aoe-sandbox-build"
-check build-tags-previous bash -c 'grep -n -E "^(tag|build)" "$1" | sed "s/^[0-9]*://" | head -2 | tr "\n" "|" | grep -q "^tag aoe-sandbox-dotfiles:latest aoe-sandbox-dotfiles:previous|build|$"' _ "$STUB/calls"
+setup; configured; touch "$STUB/image"; echo old-id >"$STUB/id"; run "$REPO/scripts/bin/aoe-sandbox-build"
+check build-tags-previous bash -c 'grep -n -E "^(tag|build)" "$1" | sed "s/^[0-9]*://" | head -2 | tr "\n" "|" | grep -q "^build|tag old-id aoe-sandbox-dotfiles:previous|$"' _ "$STUB/calls"
+
+setup; configured; touch "$STUB/image"; echo same-id >"$STUB/id"; export STUB_NEW_ID=same-id; run "$REPO/scripts/bin/aoe-sandbox-build"
+check build-same-id-keeps-previous bash -c '! grep -q "^tag" "$1" && grep -q "^build" "$1"' _ "$STUB/calls"
+
+setup; configured; touch "$STUB/image"; echo old-id >"$STUB/id"; export STUB_BUILD_FAIL=1; run "$REPO/scripts/bin/aoe-sandbox-build"
+check build-failure-keeps-previous bash -c '! grep -q "^tag" "$1" && grep -q "^build" "$1"' _ "$STUB/calls"
 
 setup; configured; run "$REPO/scripts/bin/aoe-sandbox-build"
 check build-first-time-no-tag bash -c '! grep -q "^tag" "$1" && grep -q "^build" "$1"' _ "$STUB/calls"

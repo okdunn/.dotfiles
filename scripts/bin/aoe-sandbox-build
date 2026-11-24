@@ -12,13 +12,17 @@ BOOTSTRAP_SHA256=$(sha256sum "$SANDBOX_DIR/aoe-bootstrap" | cut -d' ' -f1)
 
 RT=${RUNTIME:-docker}
 
-if "$RT" image inspect aoe-sandbox-dotfiles:latest &>/dev/null; then
-  "$RT" tag aoe-sandbox-dotfiles:latest aoe-sandbox-dotfiles:previous
-fi
+old_id=$("$RT" image inspect aoe-sandbox-dotfiles:latest --format '{{.Id}}' 2>/dev/null || true)
 
 "$RT" build --pull --build-arg "BOOTSTRAP_SHA256=$BOOTSTRAP_SHA256" -t aoe-sandbox-dotfiles:latest "$SANDBOX_DIR"
 
-# Rebuilding orphans the old :latest; the label keeps this from touching anyone else's images
+# Only a build that changed :latest displaces it; a cache-hit rebuild must not overwrite the real :previous
+new_id=$("$RT" image inspect aoe-sandbox-dotfiles:latest --format '{{.Id}}' 2>/dev/null || true)
+if [[ -n $old_id && $old_id != "$new_id" ]]; then
+  "$RT" tag "$old_id" aoe-sandbox-dotfiles:previous
+fi
+
+# Retagging :previous orphans the one before it; the label keeps this from touching anyone else's images
 while read -r id; do
   [[ -n $id ]] || continue
   label=$("$RT" image inspect "$id" --format '{{index .Config.Labels "dotfiles.bootstrap-sha256"}}' 2>/dev/null || true)
