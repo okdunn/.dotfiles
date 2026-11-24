@@ -112,6 +112,31 @@ check_aoe_mount() {
   fi
 }
 
+check_aoe_cache() {
+  local cfg
+  if [[ ! -d "$AOE_DIR" ]]; then
+    echo "  - aoe toolchain cache: not configured, skipped"
+    return
+  fi
+  while IFS= read -r cfg; do
+    if ! grep -qF "$AOE_MISE_MOUNT" "$cfg" 2>/dev/null; then
+      _fail "aoe mounts the toolchain cache" "missing in $cfg; run install.sh --stow-only"
+      return
+    fi
+  done < <(aoe_profile_configs)
+  _ok "aoe mounts the toolchain cache"
+  # The installer only runs aoe-sandbox-warm --init where sandboxes can run
+  if in_container || ! aoe_runtime_usable; then
+    echo "  - aoe toolchain cache generation: skipped (no usable container runtime)"
+    return
+  fi
+  if [[ -f "$AOE_MISE_DIR/current/.generation" ]]; then
+    _ok "aoe toolchain cache at generation $(cat "$AOE_MISE_DIR/current/.generation")"
+  else
+    _fail "aoe toolchain cache initialised" "$AOE_MISE_DIR/current is missing; run aoe-sandbox-warm --init"
+  fi
+}
+
 podman_rootless() { [[ $(podman info --format '{{.Host.Security.Rootless}}' 2>/dev/null) == true ]]; }
 
 check_aoe_sandbox() {
@@ -134,6 +159,25 @@ check_aoe_sandbox() {
   [[ $rt == podman ]] && _check "podman runs rootless" podman_rootless
   if aoe_image_present; then _ok "aoe sandbox image $(aoe_image) built"; else
     _fail "aoe sandbox image $(aoe_image) built" "run aoe-sandbox-build"
+    return
+  fi
+  if [[ $(aoe_image_bootstrap_sha) == "$(aoe_bootstrap_sha)" ]]; then
+    _ok "aoe sandbox image has the current aoe-bootstrap"
+  else
+    _fail "aoe sandbox image has the current aoe-bootstrap" "run aoe-sandbox-build"
+  fi
+}
+
+check_aoe_version() {
+  command -v aoe &>/dev/null || return 0
+  local pin have
+  pin=$(sed -n 's/^"github:agent-of-empires\/agent-of-empires" *= *"\(.*\)"/\1/p' "$HOME/.config/mise/config.toml" 2>/dev/null)
+  [[ -n $pin ]] || return 0
+  have=$(aoe --version | awk '{print $2}')
+  if [[ $have == "$pin" ]]; then
+    _ok "aoe $have matches the mise pin"
+  else
+    _fail "aoe $have matches the mise pin $pin" "bump the pin after running tests/aoe-sandbox-session.sh"
   fi
 }
 
@@ -149,7 +193,6 @@ run_checks() {
   check_stow
   check_zshrc_clean
   _check "~/.claude/CLAUDE.md linked" test -L "$HOME/.claude/CLAUDE.md"
-  _check "implement skill linked" test -L "$HOME/.claude/skills/implement/SKILL.md"
   _check "eza theme linked" test -L "$HOME/.config/eza/theme.yml"
   _check "git global ignore linked" test -L "$HOME/.config/git/ignore"
   _check "atuin config linked" test -L "$HOME/.config/atuin/config.toml"
@@ -161,7 +204,9 @@ run_checks() {
   _check "Claude Code settings merged" check_claude_settings
   _check "atuin Claude hook guarded (run install.sh --stow-only)" check_atuin_hook
   check_aoe_mount
+  check_aoe_cache
   check_aoe_sandbox
+  check_aoe_version
   _check "git identity set" sh -c 'git config --global --includes user.name && git config --global --includes user.email'
   _check "tldr pages cached" check_tldr
 

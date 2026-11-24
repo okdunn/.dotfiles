@@ -29,11 +29,10 @@ context_lines = 3
 split_view = false
 
 [hooks]
-# Install the repo's pinned toolchains before the agent starts, so they're on PATH (shims)
-# inside the sandbox. With a mise.lock, install strictly from it: the image's mise can be newer
-# than the one that wrote it and would rewrite it, leaving every worktree dirty. A failed
-# install mustn't block the session; the agent can retry it.
-on_launch = ["{ [ -f mise.lock ] && export MISE_LOCKED=true; mise install; } || true"]
+# One script rather than inline commands: it's baked into the image, logs each step, and always
+# exits 0 so a failed step never blocks the session. The guard covers an image that predates the
+# script (stale after a pull, or rolled back to :previous), where the bare call would exit 127.
+on_launch = ["if command -v aoe-bootstrap >/dev/null; then aoe-bootstrap; else echo 'aoe-bootstrap missing: run aoe-sandbox-build'; fi"]
 
 [host_hooks]
 
@@ -62,10 +61,6 @@ environment = [
     "NO_COLOR",
 ]
 extra_volumes = []
-# Toolchain cache shared by every session. Overlay (:O): sessions read it but their writes are
-# discarded, so one session can't tamper with what later ones run; aoe-sandbox-warm adds to it.
-# Not in extra_volumes: a profile's list replaces the global one.
-extra_run_args = ["-v", "aoe-mise:/opt/mise:O"]
 mount_ssh = false
 privileged = false
 selinux_relabel = false

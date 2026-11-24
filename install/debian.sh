@@ -157,6 +157,7 @@ if ! tldr tar >/dev/null 2>&1; then
 fi
 setup_claude
 ensure_aoe_sandbox_image
+ensure_aoe_cache
 
 if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
   log "Installing tmux plugin manager..."

@@ -21,22 +21,21 @@ sudo -u tester -H env GITHUB_TOKEN="${GITHUB_TOKEN:-}" bash -euo pipefail -c '
   cd ~/.dotfiles
   # Pre-existing Claude Code settings must survive the merge
   mkdir -p ~/.claude && echo "{\"theme\": \"light\"}" > ~/.claude/settings.json
-  # An untracked skill must stay local; an old untracked copy of a tracked skill gets backed up
-  mkdir -p ~/.claude/skills/other ~/.claude/skills/implement
+  # A local skill must survive; an old untracked copy of a tracked file gets backed up
+  mkdir -p ~/.claude/skills/other
   echo other > ~/.claude/skills/other/SKILL.md
-  echo old > ~/.claude/skills/implement/SKILL.md
+  echo old > ~/.claude/CLAUDE.md
   # Identity is normally prompted for; preset it so the non-interactive run is complete
   git config --file ~/.gitconfig.local user.name "CI Tester"
   git config --file ~/.gitconfig.local user.email "ci@example.com"
   bash install.sh "$@" </dev/null
 
-  echo "=== claude skills ==="
-  [ -L ~/.claude/skills/implement/SKILL.md ] && [[ "$(realpath ~/.claude/skills/implement/SKILL.md)" == ~/.dotfiles/* ]] \
-    || { echo "FAIL: implement skill not linked into ~/.dotfiles"; exit 1; }
-  [ -d ~/.claude/skills ] && [ ! -L ~/.claude/skills ] || { echo "FAIL: ~/.claude/skills folded into a symlink"; exit 1; }
-  [ "$(cat ~/.claude/skills/other/SKILL.md)" = other ] || { echo "FAIL: untracked skill lost"; exit 1; }
-  find ~/.dotfiles-backup -path "*/.claude/skills/implement/SKILL.md" | grep -q . \
-    || { echo "FAIL: old implement skill not backed up"; exit 1; }
+  echo "=== claude config ==="
+  [ -L ~/.claude/CLAUDE.md ] && [[ "$(realpath ~/.claude/CLAUDE.md)" == ~/.dotfiles/* ]] \
+    || { echo "FAIL: CLAUDE.md not linked into ~/.dotfiles"; exit 1; }
+  [ "$(cat ~/.claude/skills/other/SKILL.md)" = other ] || { echo "FAIL: local skill lost"; exit 1; }
+  find ~/.dotfiles-backup -path "*/.claude/CLAUDE.md" | grep -q . \
+    || { echo "FAIL: old CLAUDE.md not backed up"; exit 1; }
   # Expected backup from the seeded conflict; the idempotency check below needs a clean slate
   rm -rf ~/.dotfiles-backup
 

@@ -1,0 +1,157 @@
+#!/usr/bin/env bash
+# Prepares a fresh session worktree: toolchains, dependencies, git hooks. Each step runs in its
+# own timeout and a failure never stops the next one, so this always exits 0.
+# shellcheck disable=SC2329  # step_* run via --step re-entry
+set -uo pipefail
+
+LOG=${AOE_BOOTSTRAP_LOG:-/tmp/aoe-bootstrap.log}
+TIMEOUT=${AOE_BOOTSTRAP_TIMEOUT:-900}
+VERSION_FILES=(rust-toolchain.toml rust-toolchain .nvmrc .node-version .python-version
+  .ruby-version .java-version global.json)
+
+log() {
+  printf 'aoe-bootstrap: %s\n' "$*" | tee -a "$LOG"
+}
+
+# run <step> <action> <attempts> <cmd...>: attempts above 1 only retry the git config lock race
+# that concurrent hook installs hit. stdin is closed so a tool that prompts gets EOF instead of
+# waiting on the pane's tty until the timeout.
+run() {
+  local step=$1 action=$2 attempts=$3 err rc=0 i
+  shift 3
+  err=$(mktemp)
+  for ((i = 1; i <= attempts; i++)); do
+    "$@" </dev/null >>"$LOG" 2>"$err"
+    rc=$?
+    cat "$err" >>"$LOG"
+    ((rc == 0)) && break
+    if ((i == attempts)) || ! grep -q 'could not lock config file' "$err"; then break; fi
+    sleep 1
+  done
+  rm -f "$err"
+  if ((rc == 0)); then log "$step: $action: ok"; else log "$step: $action: failed ($rc)"; fi
+}
+
+step_toolchains() {
+  local f found=0
+  for f in mise.toml .mise.toml mise.lock .tool-versions "${VERSION_FILES[@]}"; do
+    [[ -f $f ]] && found=1 && break
+  done
+  if ((!found)); then
+    log "toolchains: mise: skipped (no toolchain files)"
+  elif ! command -v mise >/dev/null; then
+    log "toolchains: mise: skipped (mise not found)"
+  else
+    [[ -f mise.lock ]] && export MISE_LOCKED=true
+    run toolchains mise 1 mise install
+  fi
+}
+
+dep() { # dep <lockfile>... -- <tool> <args...>
+  local files=()
+  while [[ $1 != -- ]]; do files+=("$1"); shift; done
+  shift
+  local f found=0
+  for f in "${files[@]}"; do [[ -f $f ]] && found=1; done
+  ((found)) || return 0
+  deps_seen=1
+  if command -v "$1" >/dev/null; then
+    run deps "$1" 1 "$@"
+  else
+    log "deps: $1: skipped ($1 not found)"
+  fi
+}
+
+step_deps() {
+  deps_seen=0
+  export CI=true
+  local yarn_flag=--immutable
+  if [[ -f yarn.lock ]] && command -v yarn >/dev/null && [[ $(yarn --version 2>/dev/null </dev/null) == 1.* ]]; then
+    yarn_flag=--frozen-lockfile
+  fi
+  dep pnpm-lock.yaml -- pnpm install --frozen-lockfile
+  dep package-lock.json -- npm ci
+  dep yarn.lock -- yarn install "$yarn_flag"
+  dep bun.lock bun.lockb -- bun install --frozen-lockfile
+  dep uv.lock -- uv sync --frozen
+  dep Cargo.lock -- cargo fetch --locked
+  BUNDLE_FROZEN=true dep Gemfile.lock -- bundle install
+  dep go.mod -- go mod download
+  if [[ -f go.work ]] && command -v go >/dev/null; then
+    deps_seen=1
+    local json dir
+    json=$(go work edit -json) || { log "deps: go work: failed ($?)"; json='{}'; }
+    while IFS= read -r dir; do
+      (cd "$dir" && run deps "go $dir" 1 go mod download)
+    done < <(python3 -I -c '
+import json, sys
+for use in json.loads(sys.argv[1]).get("Use") or []:
+    print(use["DiskPath"])' "$json")
+  fi
+  ((deps_seen)) || log "deps: lockfiles: skipped (none at the repo root)"
+}
+
+step_hooks() {
+  local seen=0 f ver cmd=()
+  if [[ -f package.json ]]; then
+    ver=$(python3 -I -c '
+import json, sys
+p = json.load(open("package.json"))
+for k in ("dependencies", "devDependencies"):
+    if "husky" in (p.get(k) or {}):
+        print("v:" + p[k]["husky"].lstrip("~^"))
+        break' 2>/dev/null)
+    if [[ -n $ver ]]; then
+      seen=1
+      ver=${ver#v:}
+      if [[ -x node_modules/.bin/husky ]]; then
+        run hooks husky 5 node_modules/.bin/husky
+      elif command -v npx >/dev/null; then
+        run hooks husky 5 npx --yes "husky${ver:+@$ver}"
+      else
+        log "hooks: husky: skipped (npx not found)"
+      fi
+    fi
+  fi
+  for f in lefthook.yml lefthook.yaml .lefthook.yml .lefthook.yaml lefthook.toml lefthook.json; do
+    [[ -f $f ]] || continue
+    seen=1
+    if [[ -x node_modules/.bin/lefthook ]]; then
+      cmd=(node_modules/.bin/lefthook install)
+    elif command -v lefthook >/dev/null; then
+      cmd=(lefthook install)
+    else
+      log "hooks: lefthook: skipped (lefthook not found)"
+      break
+    fi
+    run hooks lefthook 5 "${cmd[@]}"
+    break
+  done
+  if [[ -f .pre-commit-config.yaml ]]; then
+    seen=1
+    if command -v pre-commit >/dev/null; then
+      run hooks pre-commit 5 pre-commit install
+    elif command -v uvx >/dev/null; then
+      run hooks pre-commit 5 uvx pre-commit install
+    else
+      log "hooks: pre-commit: skipped (pre-commit and uvx not found)"
+    fi
+  fi
+  ((seen)) || log "hooks: hooks: skipped (no hook config)"
+}
+
+if [[ ${1:-} == --step ]]; then
+  "step_$2"
+  exit 0
+fi
+
+for step in toolchains deps hooks; do
+  timeout --kill-after=10 "$TIMEOUT" "$0" --step "$step"
+  rc=$?
+  if ((rc == 124 || rc == 137)); then
+    log "$step: step: timed out"
+  elif ((rc != 0)); then
+    log "$step: step: failed ($rc)"
+  fi
+done
+exit 0

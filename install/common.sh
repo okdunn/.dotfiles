@@ -181,18 +181,39 @@ ensure_aoe_gitconfig_mount() {
 }
 
 add_aoe_mount() {
-  local cfg="$1" line="extra_volumes = [\"$AOE_GITCONFIG_MOUNT\"]" tmp prog
-  grep -qF "$AOE_GITCONFIG_MOUNT" "$cfg" 2>/dev/null && return 0
+  add_aoe_profile_list "$1" extra_volumes "\"$AOE_GITCONFIG_MOUNT\"" "$AOE_GITCONFIG_MOUNT"
+}
+
+# Toolchain cache shared by every session, kept in generations by aoe-sandbox-warm. Overlay (:O):
+# sessions read it but their writes are discarded, so one session can't tamper with what later
+# ones run. `current` is resolved when a container starts, so a session keeps its generation
+# while a newer one is warmed.
+AOE_MISE_DIR="${AOE_MISE_DIR:-$HOME/.local/share/aoe-mise}"
+AOE_MISE_MOUNT="$AOE_MISE_DIR/current:/opt/mise:O"
+
+ensure_aoe_cache_mount() {
+  local cfg
+  [[ -d "$AOE_DIR" ]] || return 0
+  while IFS= read -r cfg; do
+    add_aoe_profile_list "$cfg" extra_run_args "\"-v\", \"$AOE_MISE_MOUNT\"" "$AOE_MISE_MOUNT"
+  done < <(aoe_profile_configs)
+}
+
+# add_aoe_profile_list <cfg> <key> <toml array body> <marker>: set sandbox.<key> in a profile
+# config to [<body>], unless <marker> is already there or the key holds a list of its own
+add_aoe_profile_list() {
+  local cfg="$1" key="$2" line="$2 = [$3]" marker="$4" tmp prog
+  grep -qF "$marker" "$cfg" 2>/dev/null && return 0
   # aoe refuses to start when its app dir is group-writable
   [[ -d "${cfg%/*}" ]] || install -d -m 700 "${cfg%/*/*}" "${cfg%/*}"
   # Regexes stay literal in the awk programs: gawk strips the backslash from "\[" in -v values
-  local empty='^[[:space:]]*extra_volumes[[:space:]]*=[[:space:]]*\[[[:space:]]*\][[:space:]]*$'
+  local empty="^[[:space:]]*${key}[[:space:]]*=[[:space:]]*\\[[[:space:]]*\\][[:space:]]*\$"
   local header='^[[:space:]]*\[sandbox\][[:space:]]*(#.*)?$'
-  # aoe writes `extra_volumes = []` when it saves its settings
+  # aoe writes `<key> = []` when it saves its settings
   if grep -qE "$empty" "$cfg" 2>/dev/null; then
-    prog='/^[[:space:]]*extra_volumes[[:space:]]*=[[:space:]]*\[[[:space:]]*\][[:space:]]*$/ { print l; next } { print }'
-  elif grep -qE '^[[:space:]]*extra_volumes[[:space:]]*=' "$cfg" 2>/dev/null; then
-    warn "Add \"$AOE_GITCONFIG_MOUNT\" to sandbox.extra_volumes in $cfg so aoe sandboxes get your git identity"
+    prog="/$empty/ { print l; next } { print }"
+  elif grep -qE "^[[:space:]]*${key}[[:space:]]*=" "$cfg" 2>/dev/null; then
+    warn "Add $3 to sandbox.$key in $cfg for aoe sandboxes"
     return 0
   elif grep -qE "$header" "$cfg" 2>/dev/null; then
     prog='{ print } /^[[:space:]]*\[sandbox\][[:space:]]*(#.*)?$/ { print l }'
@@ -206,7 +227,7 @@ add_aoe_mount() {
   else
     printf '[sandbox]\n%s\n' "$line" >"$cfg"
   fi
-  log "Mounted ~/.gitconfig.local into aoe sandboxes ($cfg)"
+  log "Set sandbox.$key in $cfg"
 }
 
 aoe_setting() { sed -n "s/^$1 = \"\(.*\)\"/\1/p" "$AOE_DIR/config.toml" 2>/dev/null | head -n1; }
@@ -216,6 +237,10 @@ aoe_image() { aoe_setting default_image; }
 # A runtime can't start sandboxes from inside another container (e.g. tests/cleanroom.sh)
 in_container() { [[ -f /.dockerenv || -f /run/.containerenv ]]; }
 aoe_runtime_usable() { ! in_container && "$(aoe_runtime)" info &>/dev/null; }
+aoe_bootstrap_sha() { sha256sum "$DOTFILES_DIR/aoe/.config/agent-of-empires/sandbox/aoe-bootstrap" | cut -d' ' -f1; }
+aoe_image_bootstrap_sha() {
+  "$(aoe_runtime)" image inspect "$(aoe_image)" --format '{{index .Config.Labels "dotfiles.bootstrap-sha256"}}' 2>/dev/null
+}
 aoe_image_present() { "$(aoe_runtime)" image inspect "$(aoe_image)" &>/dev/null; }
 
 # default_image is built locally, so a new machine (or a pruned one) can't start sandboxes
@@ -231,10 +256,17 @@ ensure_aoe_sandbox_image() {
   "$DOTFILES_DIR/scripts/bin/aoe-sandbox-build" || warn "aoe-sandbox-build failed; aoe sandboxes won't start"
 }
 
+ensure_aoe_cache() {
+  [[ -f "$AOE_DIR/config.toml" ]] && aoe_runtime_usable || return 0
+  "$DOTFILES_DIR/scripts/bin/aoe-sandbox-warm" --init ||
+    warn "aoe-sandbox-warm --init failed; aoe sandboxes won't start until it succeeds"
+}
+
 setup_claude() {
   merge_claude_settings
   guard_atuin_hook
   ensure_aoe_gitconfig_mount
+  ensure_aoe_cache_mount
 }
 
 # Point btop at the tracked catppuccin OLED theme. btop.conf itself isn't stowed:

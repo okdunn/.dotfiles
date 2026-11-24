@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
 # aoe-sandbox-warm [repo-dir | tool@version]... — add toolchains to the cache aoe sandboxes
 # read from. Sessions mount it as an overlay, so what they install themselves is discarded;
-# this is how the cache grows.
+# this is how the cache grows. Each warm installs into a copy of the current generation and
+# then points `current` at it, so it runs alongside sessions: they keep the generation they
+# started with, and generations no running sandbox uses are deleted.
+# aoe-sandbox-warm --init — create the first generation, seeded from the old aoe-mise volume.
 #
 # A repo is read on the host for its version files (rust-toolchain.toml, .nvmrc, …) and the
 # [tools] table of mise.toml. Only those values reach the install container: a repo's mise
 # config can run code, so it's never handed to mise.
 set -euo pipefail
 
-usage() { sed -n '2,8s/^# \{0,1\}//p' "${BASH_SOURCE[0]}"; }
+usage() { sed -n '2,11s/^# \{0,1\}//p' "${BASH_SOURCE[0]}"; }
 [[ $# -gt 0 && $1 != -h && $1 != --help ]] || {
   usage
   exit 1
@@ -17,12 +20,76 @@ usage() { sed -n '2,8s/^# \{0,1\}//p' "${BASH_SOURCE[0]}"; }
 RUNTIME=$(sed -n 's/^container_runtime = "\(.*\)"/\1/p' "$HOME/.config/agent-of-empires/config.toml")
 RUNTIME=${RUNTIME:-docker}
 IMAGE=aoe-sandbox-dotfiles:latest
+MISE_DIR=${AOE_MISE_DIR:-$HOME/.local/share/aoe-mise}
 VERSION_FILES=(rust-toolchain.toml rust-toolchain .nvmrc .node-version .python-version
   .ruby-version .java-version global.json)
 
-# Overlay mounts break if their lower directory changes underneath them
-if [[ -n "$("$RUNTIME" ps -q --filter name=aoe-sandbox-)" ]]; then
-  echo "aoe sandboxes are running; stop them before warming the shared cache" >&2
+# Go's module cache, for one, leaves read-only directories that rm -rf can't empty
+remove_gen() { chmod -R u+w "$1" 2>/dev/null || true; rm -rf "$1"; }
+
+# Children don't get the lock fd: podman can leave a long-lived process behind (the rootless
+# pause process) that would hold the lock forever
+rt() { "$RUNTIME" "$@" 9>&-; }
+
+switch_current() {
+  ln -sfn "gen-$1" "$MISE_DIR/.current.new"
+  mv -T "$MISE_DIR/.current.new" "$MISE_DIR/current"
+}
+
+# A running sandbox's overlay lower dir is reported as the unresolved `current` path, so the
+# generation it actually uses is read from the marker file inside it. One without a readable
+# marker predates generations and pins nothing.
+gc() {
+  local pinned=" " names c g dir
+  # Without the list, any old generation may be in use: keep them all
+  if ! names=$(rt ps --filter name=aoe-sandbox- --format '{{.Names}}'); then
+    echo "couldn't list running sandboxes; old generations are kept until the next warm" >&2
+    return 0
+  fi
+  while IFS= read -r c; do
+    [[ -n $c ]] || continue
+    g=$(rt exec "$c" cat /opt/mise/.generation 2>/dev/null) || continue
+    [[ $g =~ ^[0-9]+$ ]] && pinned+="$g "
+  done <<<"$names"
+  for dir in "$MISE_DIR"/gen-*; do
+    [[ -d $dir && ${dir##*/} != "$(readlink "$MISE_DIR/current")" ]] || continue
+    [[ $pinned == *" ${dir##*/gen-} "* ]] || remove_gen "$dir"
+  done
+}
+
+init() {
+  [[ -e $MISE_DIR/current ]] && return 0
+  local gen=$MISE_DIR/gen-1
+  remove_gen "$gen"
+  mkdir "$gen"
+  local seeded=false
+  if rt volume inspect aoe-mise &>/dev/null; then
+    echo "Copying the aoe-mise volume into $gen..."
+    if ! rt run --rm -v aoe-mise:/from:ro -v "$gen:/to" --entrypoint cp "$IMAGE" -a /from/. /to/; then
+      remove_gen "$gen"
+      echo "copying the aoe-mise volume failed; it's left in place" >&2
+      exit 1
+    fi
+    seeded=true
+  fi
+  echo 1 >"$gen/.generation"
+  switch_current 1
+  # A container still referencing the volume, even a stopped one, makes this fail
+  if $seeded && ! rt volume rm aoe-mise >/dev/null; then
+    echo "couldn't remove the aoe-mise volume; remove it once no container uses it" >&2
+  fi
+}
+
+mkdir -p "$MISE_DIR"
+exec 9>"$MISE_DIR/.lock"
+flock 9
+
+if [[ $1 == --init ]]; then
+  init
+  exit
+fi
+if [[ ! -e $MISE_DIR/current ]]; then
+  echo "no toolchain cache in $MISE_DIR yet; run aoe-sandbox-warm --init" >&2
   exit 1
 fi
 
@@ -53,11 +120,27 @@ for tool, v in tomllib.load(open(sys.argv[1], "rb")).get("tools", {}).items():
   fi
 done
 
+last=0
+for dir in "$MISE_DIR"/gen-*; do
+  n=${dir##*/gen-}
+  [[ $n =~ ^[0-9]+$ ]] && ((n > last)) && last=$n
+done
+next=$((last + 1))
+new=$MISE_DIR/gen-$next
+cp -a --reflink=auto "$MISE_DIR/$(readlink "$MISE_DIR/current")" "$new"
+echo "$next" >"$new/.generation"
+
 # MISE_TRUSTED_CONFIG_PATHS is cleared: only the copied version files are present anyway
 # shellcheck disable=SC2016  # the bash -c body runs in the container
-"$RUNTIME" run --rm -v aoe-mise:/opt/mise -v "$work:/w:ro" -e MISE_TRUSTED_CONFIG_PATHS= \
+if ! rt run --rm -v "$new:/opt/mise" -v "$work:/w:ro" -e MISE_TRUSTED_CONFIG_PATHS= \
   --entrypoint bash "$IMAGE" -c '
     set -e
     for d in /w/repo*/; do [ -d "$d" ] && (cd "$d" && mise install); done
     [ $# -eq 0 ] || mise install "$@"
-  ' _ "${specs[@]}"
+  ' _ "${specs[@]}"; then
+  remove_gen "$new"
+  echo "install failed; the cache is unchanged" >&2
+  exit 1
+fi
+switch_current "$next"
+gc
