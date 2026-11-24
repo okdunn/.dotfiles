@@ -14,13 +14,14 @@ log() {
 }
 
 # run <step> <action> <attempts> <cmd...>: attempts above 1 only retry the git config lock race
-# that concurrent hook installs hit.
+# that concurrent hook installs hit. stdin is closed so a tool that prompts gets EOF instead of
+# waiting on the pane's tty until the timeout.
 run() {
   local step=$1 action=$2 attempts=$3 err rc=0 i
   shift 3
   err=$(mktemp)
   for ((i = 1; i <= attempts; i++)); do
-    "$@" >>"$LOG" 2>"$err"
+    "$@" </dev/null >>"$LOG" 2>"$err"
     rc=$?
     cat "$err" >>"$LOG"
     ((rc == 0)) && break
@@ -63,9 +64,14 @@ dep() { # dep <lockfile>... -- <tool> <args...>
 
 step_deps() {
   deps_seen=0
+  export CI=true
+  local yarn_flag=--immutable
+  if [[ -f yarn.lock ]] && command -v yarn >/dev/null && [[ $(yarn --version 2>/dev/null </dev/null) == 1.* ]]; then
+    yarn_flag=--frozen-lockfile
+  fi
   dep pnpm-lock.yaml -- pnpm install --frozen-lockfile
   dep package-lock.json -- npm ci
-  dep yarn.lock -- yarn install --immutable
+  dep yarn.lock -- yarn install "$yarn_flag"
   dep bun.lock bun.lockb -- bun install --frozen-lockfile
   dep uv.lock -- uv sync --frozen
   dep Cargo.lock -- cargo fetch --locked

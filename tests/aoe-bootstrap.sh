@@ -16,15 +16,15 @@ setup() {
   export CALLS="$SANDBOX/calls" STATE="$SANDBOX/state" AOE_BOOTSTRAP_LOG="$SANDBOX/log"
   mkdir -p "$REPO" "$STUBS" "$BASE" "$STATE"
   : >"$CALLS"
-  unset AOE_BOOTSTRAP_TIMEOUT GO_WORK_JSON
+  unset AOE_BOOTSTRAP_TIMEOUT GO_WORK_JSON CI YARN_VERSION
   # A PATH without the host's real toolchains, so "tool missing" cases are deterministic
-  for c in bash env timeout sleep cat tee grep sed tr mktemp rm mkdir dirname python3; do
+  for c in bash env timeout sleep cat tee grep sed tr mktemp rm mkdir dirname python3 wc; do
     ln -s "$(command -v "$c")" "$BASE/$c"
   done
   cat >"$SANDBOX/stub" <<'STUB'
 #!/bin/bash
 n=${0##*/}
-echo "$n $* | cwd=$PWD | MISE_LOCKED=${MISE_LOCKED:-} | BUNDLE_FROZEN=${BUNDLE_FROZEN:-}" >>"$CALLS"
+echo "$n $* | cwd=$PWD | MISE_LOCKED=${MISE_LOCKED:-} | BUNDLE_FROZEN=${BUNDLE_FROZEN:-} | CI=${CI:-} | stdin=$(cat | wc -c)" >>"$CALLS"
 v=${n//-/_}
 s=SLEEP_$v
 [ -z "${!s:-}" ] || sleep "${!s}"
@@ -39,6 +39,7 @@ if [ -n "${!l:-}" ]; then
 fi
 f=FAIL_$v
 [ -z "${!f:-}" ] || exit "${!f}"
+[ "$1" != --version ] || echo "${YARN_VERSION:-4.1.0}"
 [ "$1 $2 $3" != "work edit -json" ] || echo "$GO_WORK_JSON"
 exit 0
 STUB
@@ -48,7 +49,7 @@ STUB
 stub() { for n in "$@"; do ln -s "$SANDBOX/stub" "$STUBS/$n"; done; }
 run() { # run [env...]; sets $rc and $elapsed
   local t=$SECONDS
-  env "$@" PATH="$STUBS:$BASE" bash -c '"$1"' _ "$BOOTSTRAP" >"$SANDBOX/out" 2>&1
+  env "$@" PATH="$STUBS:$BASE" bash -c '"$1"' _ "$BOOTSTRAP" <<<pending >"$SANDBOX/out" 2>&1
   rc=$?
   elapsed=$((SECONDS - t))
 }
@@ -73,6 +74,15 @@ check toolchains-version-file bash -c 'grep -q "^mise install .*MISE_LOCKED= |" 
 
 setup; stub pnpm; touch pnpm-lock.yaml; run
 check deps-pnpm-frozen called "^pnpm install --frozen-lockfile"
+
+setup; stub pnpm; touch pnpm-lock.yaml; run
+check deps-no-stdin-and-ci bash -c 'grep -q "^pnpm .*CI=true | stdin=0" "$1"' _ "$CALLS"
+
+setup; stub yarn; touch yarn.lock; run
+check deps-yarn-berry-immutable called "^yarn install --immutable"
+
+setup; stub yarn; touch yarn.lock; run YARN_VERSION=1.22.19
+check deps-yarn-classic-frozen-lockfile called "^yarn install --frozen-lockfile"
 
 setup; stub bundle; touch Gemfile.lock; run
 check deps-bundle-frozen bash -c 'grep -q "^bundle install .*BUNDLE_FROZEN=true" "$1"' _ "$CALLS"
